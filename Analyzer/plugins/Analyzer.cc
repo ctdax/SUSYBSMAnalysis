@@ -499,7 +499,7 @@ void Analyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) 
 
     for(size_t i=0; i<genColl.size();i++)
     {
-      if(
+      /*if(
          (abs(genColl[i].pdgId()) >= 1 && abs(genColl[i].pdgId()) <= 6 && ( genColl[i].status() < 30 ))
          || (abs(genColl[i].pdgId()) >= 11 && abs(genColl[i].pdgId()) <= 18)
          || (abs(genColl[i].pdgId()) == 21 && genColl[i].status() < 30)
@@ -510,8 +510,9 @@ void Analyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) 
          || (abs(genColl[i].pdgId()) >= 1000000)
          )
         {
+	*/
       	  prunedV.push_back(&genColl[i]);
-        }
+       // }
     } //loop over all gen particles
 
     // //Look for mother particle and Fill gen variables
@@ -1760,7 +1761,6 @@ for ( int q=0; q<MAX_MuonHLTFilters;q++) {
     // Compute transverse mass mT between HSCP with and MET
     float massT = -10.;
     if (RecoPFMET > 0) massT = sqrt(2*track->pt()*RecoPFMET*(1-cos(track->phi()-RecoPFMET_phi)));
-
     // Impact parameters if no vertex
     float dzFromBeamSpot = 9999.;
     float dxyFromBeamSpot = 9999.;

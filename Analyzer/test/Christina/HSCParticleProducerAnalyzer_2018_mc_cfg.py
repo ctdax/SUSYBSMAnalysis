@@ -9,7 +9,7 @@ options = VarParsing('analysis')
 # defaults
 options.outputFile = 'Histos.root'
 # -1 means all events
-options.maxEvents = -1
+options.maxEvents = 2000
 
 #options.register('GTAG', '106X_upgrade2018_realistic_v11_L1v1',
 options.register('GTAG', '106X_upgrade2018_realistic_v11BasedCandidateTmp_2022_08_09_01_32_34',
@@ -84,7 +84,7 @@ process.source = cms.Source("PoolSource",
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, options.GTAG, '')
 
-process.HSCPTuplePath = cms.Path() 
+process.HSCPTuplePath = cms.Path()
 
 ########################################################################
 #Run the Skim sequence if necessary
@@ -95,18 +95,18 @@ if(not options.isSkimmedSample):
    process.HSCPTrigger = process.hltHighLevel.clone()
    process.HSCPTrigger.TriggerResultsTag = cms.InputTag( "TriggerResults", "", "HLT" )
    process.HSCPTrigger.andOr = cms.bool( True ) #OR
-   process.HSCPTrigger.throw = cms.bool( False )  
-   process.HSCPTrigger.HLTPaths = ["*"]     
-   process.HSCPTuplePath += process.nEventsBefSkim + process.HSCPTrigger 
+   process.HSCPTrigger.throw = cms.bool( False )
+   process.HSCPTrigger.HLTPaths = ["*"]
+   process.HSCPTuplePath += process.nEventsBefSkim + process.HSCPTrigger
 
 ########################################################################
 
 #Run the HSCP EDM-tuple Sequence on skimmed sample
 process.nEventsBefEDM   = cms.EDProducer("EventCountProducer")
-process.load("SUSYBSMAnalysis.HSCP.HSCParticleProducer_cff") 
+process.load("SUSYBSMAnalysis.HSCP.HSCParticleProducer_cff")
 process.HSCPTuplePath += process.nEventsBefEDM + process.HSCParticleProducerSeq
 
-########################################################################  
+########################################################################
 # Only for MC samples, save skimmed genParticles
 
 if(options.SAMPLE=='isSignal' or options.SAMPLE=='isBckg'):
@@ -123,17 +123,17 @@ if(options.SAMPLE=='isSignal' or options.SAMPLE=='isBckg'):
 ########################################################################
 # electron VID
 from PhysicsTools.SelectorUtils.tools.vid_id_tools import *
-electron_id_config = cms.PSet(electron_ids = cms.vstring([                   
+electron_id_config = cms.PSet(electron_ids = cms.vstring([
                     'RecoEgamma.ElectronIdentification.Identification.cutBasedElectronID_Summer16_80X_V1_cff',
                     'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Spring16_GeneralPurpose_V1_cff',
                     'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Spring16_HZZ_V1_cff',
                     'RecoEgamma.ElectronIdentification.Identification.cutBasedElectronID_Fall17_94X_V2_cff',
-                    'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V2_cff', 
+                    'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_noIso_V2_cff',
                     'RecoEgamma.ElectronIdentification.Identification.mvaElectronID_Fall17_iso_V2_cff',
-                    ]))  
+                    ]))
 
 
-                 
+
 switchOnVIDElectronIdProducer(process,DataFormat.AOD)
 for idmod in electron_id_config.electron_ids.value():
     setupAllVIDIdsInModule(process,idmod,setupVIDElectronSelection)
@@ -156,13 +156,13 @@ process.Out = cms.OutputModule("PoolOutputModule",
          "keep recoTracks_standAloneMuons_*_*",
          "keep recoTrackExtras_standAloneMuons_*_*",
          "keep TrackingRecHitsOwned_standAloneMuons_*_*",
-         "keep recoTracks_globalMuons_*_*",  
+         "keep recoTracks_globalMuons_*_*",
          "keep recoTrackExtras_globalMuons_*_*",
          "keep recoMuons_muons_*_*",
          "keep recoMuonTimeExtraedmValueMap_muons_*_*",
          "keep edmTriggerResults_TriggerResults_*_*",
-         "keep *_ak4PFJetsCHS__*", 
-         "keep recoPFMETs_pfMet__*",     
+         "keep *_ak4PFJetsCHS__*",
+         "keep recoPFMETs_pfMet__*",
          "keep *_HSCParticleProducer_*_*",
          "keep *_HSCPIsolation*_*_*",
          "keep *_dedxHitInfo*_*_*",
@@ -171,9 +171,9 @@ process.Out = cms.OutputModule("PoolOutputModule",
          "keep *_MuonSegmentProducer_*_*",
          "keep *_g4SimHits_StoppedParticles*_*",
          "keep PileupSummaryInfos_addPileupInfo_*_*",
-         "keep *_dt4DSegments__*",  
-         "keep *_cscSegments__*",  
-         "keep *_scalersRawToDigi_*_*", 
+         "keep *_dt4DSegments__*",
+         "keep *_cscSegments__*",
+         "keep *_scalersRawToDigi_*_*",
          "keep *_caloMet_*_*",
     ),
     fileName = cms.untracked.string(options.outputFile),
@@ -205,8 +205,8 @@ if options.SAMPLE=='isData' :
        C = 3.17
        SF0 = 1.0
        SF1 = 1.0325
-       IasTemplate = "template_2017C.root" 
-   
+       IasTemplate = "template_2017C.root"
+
    if options.YEAR=='2018' :
        K = 2.27
        C = 3.16
@@ -223,7 +223,7 @@ elif options.SAMPLE=='isBckg':
        SF0 = 1.0079
        SF1 = 1.0875
        IasTemplate = "templateMC.root"
-    
+
    if options.YEAR=='2018' :
        K = 2.27
        C = 3.22
@@ -239,7 +239,7 @@ else :
        SF0 = 1.0079
        SF1 = 1.0875
        IasTemplate = "templateMC.root"
-    
+
    if options.YEAR=='2018' :
        K = 2.27
        C = 3.22
@@ -249,13 +249,13 @@ else :
 
 process.load("SUSYBSMAnalysis.Analyzer.HSCParticleAnalyzer_cfi")
 process.HSCParticleAnalyzer.TypeMode = 0 # 0: Tracker only
-process.HSCParticleAnalyzer.SampleType = SampleType 
+process.HSCParticleAnalyzer.SampleType = SampleType
 process.HSCParticleAnalyzer.SaveTree = 6 #6 is all saved, 0 is none
 process.HSCParticleAnalyzer.SaveGenTree = 0
 process.HSCParticleAnalyzer.DeDxTemplate=IasTemplate
 process.HSCParticleAnalyzer.TimeOffset="MuonTimeOffset.txt"
 process.HSCParticleAnalyzer.Period = "2018"
-process.HSCParticleAnalyzer.DebugLevel = 0 
+process.HSCParticleAnalyzer.DebugLevel = 0
 process.HSCParticleAnalyzer.DeDxK = K
 process.HSCParticleAnalyzer.DeDxC = C
 process.HSCParticleAnalyzer.DeDxSF_0 = SF0
@@ -284,4 +284,3 @@ for mod in process.filters_().itervalues():
 #schedule the sequence
 process.endPath1 = cms.EndPath(process.Out)
 process.schedule = cms.Schedule(process.HSCPTuplePath, process.endjob_step)
-
