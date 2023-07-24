@@ -1255,10 +1255,7 @@ for ( int q=0; q<MAX_MuonHLTFilters;q++) {
     }
   }
 
-  //===================== Handle For L1 Trigger EtSum ===================                                                           
-  //const edm::Handle didn't work
-  //this didn't work either: edm::Handle<l1t::EtSumBxCollection> l1TriggerEtSumHandle = iEvent.getHandle(l1TriggerEtSumToken_);
-  
+  //===================== Handle For L1 Trigger EtSum ===================
   edm::Handle<l1t::EtSumBxCollection> l1TriggerEtSumHandle;
   iEvent.getByToken(l1TriggerEtSumToken_, l1TriggerEtSumHandle);
 
