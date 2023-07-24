@@ -93,7 +93,13 @@ public:
                         const float &HLTPFMHT,
                         const float &HLTPFMHT_phi,
                         const float &HLTPFMHT_sigf,
-                        const bool &matchedMuonWasFound,
+                        const float &L1MET,
+                        const float &L1MET_phi,
+                        const float &L1MHT,
+                        const float &L1MHT_phi,
+                        const float &L1ETSum,
+                        const float &L1HTSum,
+                         const bool &matchedMuonWasFound,
                         const std::vector<int> &gParticleId,
                         const std::vector<int> &gParticleStatus,
                         const std::vector<float> &gParticleE,
@@ -1545,6 +1551,12 @@ void TupleMaker::initializeTuple(Tuple *&tuple,
     tuple->Tree->Branch("HLTPFMHT", &tuple->Tree_HLTPFMHT, "HLTPFMHT/F");
     tuple->Tree->Branch("HLTPFMHT_phi", &tuple->Tree_HLTPFMHT_phi, "HLTPFMHT_phi/F");
     tuple->Tree->Branch("HLTPFMHT_sigf", &tuple->Tree_HLTPFMHT_sigf, "HLTPFMHT_sigf/F");
+    tuple->Tree->Branch("L1MET", &tuple->Tree_L1MET, "L1MET/F");
+    tuple->Tree->Branch("L1MET_phi", &tuple->Tree_L1MET_phi, "L1MET_phi/F");
+    tuple->Tree->Branch("L1MHT", &tuple->Tree_L1MHT, "L1MHT/F");
+    tuple->Tree->Branch("L1MHT_phi", &tuple->Tree_L1MHT_phi, "L1MHT_phi/F");
+    tuple->Tree->Branch("L1ETSum", &tuple->Tree_L1ETSum, "L1ETSum/F");
+    tuple->Tree->Branch("L1HTSum", &tuple->Tree_L1HTSum, "L1HTSum/F");
     tuple->Tree->Branch("matchedMuonWasFound", &tuple->Tree_matchedMuonWasFound, "matchedMuonWasFound/O");
     tuple->Tree->Branch("gParticleId", &tuple->Tree_gParticleId);
     tuple->Tree->Branch("gParticleStatus", &tuple->Tree_gParticleStatus);
@@ -1891,6 +1903,12 @@ void TupleMaker::fillTreeBranches(Tuple *&tuple,
                                   const float &HLTPFMHT,
                                   const float &HLTPFMHT_phi,
                                   const float &HLTPFMHT_sigf,
+                                  const float &L1MET,
+                                  const float &L1MET_phi,
+                                  const float &L1MHT,
+                                  const float &L1MHT_phi,
+                                  const float &L1ETSum,
+                                  const float &L1HTSum,
                                   const bool &matchedMuonWasFound,
                                   const std::vector<int> &gParticleId,
                                   const std::vector<int> &gParticleStatus,
@@ -2166,6 +2184,12 @@ void TupleMaker::fillTreeBranches(Tuple *&tuple,
   tuple->Tree_HLTPFMHT = HLTPFMHT;
   tuple->Tree_HLTPFMHT_phi = HLTPFMHT_phi;
   tuple->Tree_HLTPFMHT_sigf = HLTPFMHT_sigf;
+  tuple->Tree_L1MET = L1MET;
+  tuple->Tree_L1MET_phi = L1MET_phi;
+  tuple->Tree_L1MHT = L1MHT;
+  tuple->Tree_L1MHT_phi = L1MHT_phi;
+  tuple->Tree_L1ETSum = L1ETSum;
+  tuple->Tree_L1HTSum = L1HTSum;
   tuple->Tree_matchedMuonWasFound = matchedMuonWasFound;
   tuple->Tree_gParticleId = gParticleId;
   tuple->Tree_gParticleStatus = gParticleStatus;

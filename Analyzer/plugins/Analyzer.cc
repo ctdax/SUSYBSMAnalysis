@@ -66,6 +66,7 @@ Analyzer::Analyzer(const edm::ParameterSet& iConfig)
       triggerResultsToken_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("TriggerResults"))),
       triggerPrescalesToken_(consumes<pat::PackedTriggerPrescales>(iConfig.getParameter<edm::InputTag>("triggerPrescales"))),
       trigEventToken_(consumes<trigger::TriggerEvent>(iConfig.getParameter<edm::InputTag>("TriggerSummary"))),
+      l1TriggerEtSumToken_(consumes<l1t::EtSumBxCollection>(iConfig.getParameter<edm::InputTag>("l1TriggerEtSum"))),
       filterName_(iConfig.getParameter<std::string>("FilterName")),
       triggerPathNamesFile_(iConfig.getParameter<string> ("triggerPathNamesFile")),
       muonHLTFilterNamesFile_(iConfig.getParameter<string> ("muonHLTFilterNamesFile")),
@@ -1187,6 +1188,7 @@ for ( int q=0; q<MAX_MuonHLTFilters;q++) {
   float HLTCaloMHT = -10, HLTCaloMHT_phi = -10, HLTCaloMHT_sigf = -10;
   float HLTPFMET = -10, HLTPFMET_phi = -10, HLTPFMET_sigf = -10;
   float HLTPFMHT = -10, HLTPFMHT_phi = -10, HLTPFMHT_sigf = -10;
+  float L1MET = -10, L1MET_phi = -10, L1MHT = -10, L1MHT_phi = -10, L1ETSum = -10, L1HTSum = -10;
 
   //===================== Handle For RecoCaloMET ===================
   if (recoCaloMETHandle.isValid() && !recoCaloMETHandle->empty()) {
@@ -1251,6 +1253,25 @@ for ( int q=0; q<MAX_MuonHLTFilters;q++) {
         HLTPFMET_sigf = hltTriggerSummaryHandle->getObjects()[pfMETKey-2].pt();
       }
     }
+  }
+
+  //===================== Handle For L1 Trigger EtSum ===================                                                           
+  //const edm::Handle didn't work
+  //this didn't work either: edm::Handle<l1t::EtSumBxCollection> l1TriggerEtSumHandle = iEvent.getHandle(l1TriggerEtSumToken_);
+  
+  edm::Handle<l1t::EtSumBxCollection> l1TriggerEtSumHandle;
+  iEvent.getByToken(l1TriggerEtSumToken_, l1TriggerEtSumHandle);
+
+  if(l1TriggerEtSumHandle.isValid()) {
+    l1t::EtSumHelper hsum(l1TriggerEtSumHandle);
+    L1MET = hsum.MissingEt();
+    L1MET_phi = hsum.MissingEtPhi();
+    L1MHT = hsum.MissingHt();
+    L1MHT_phi = hsum.MissingHtPhi();
+    L1ETSum = hsum.TotalEt();
+    L1HTSum = hsum.TotalHt();
+  } else {
+    std::cout<<"L1TriggerEtSum handle is invalid!"<<std::endl;
   }
 
   // PF jet info for the ntuple
@@ -4864,6 +4885,12 @@ for ( int q=0; q<MAX_MuonHLTFilters;q++) {
                                 HLTPFMHT,
                                 HLTPFMHT_phi,
                                 HLTPFMHT_sigf,
+                                L1MET,
+                                L1MET_phi,
+                                L1MHT,
+                                L1MHT_phi,
+                                L1ETSum,
+                                L1HTSum,
                                 matchedMuonWasFound,
                                 gParticleId,
                                 gParticleStatus,
@@ -5243,7 +5270,8 @@ void Analyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     ->setComment("Take jets from the calorimeters");
   desc.add("TriggerSummary", edm::InputTag("hltTriggerSummaryAOD"))
     ->setComment("A");
-
+  desc.add("l1TriggerEtSum", edm::InputTag("caloStage2Digis","EtSum"))
+    ->setComment("A");
 
 
   desc.add("PileupInfo", edm::InputTag("addPileupInfo"))

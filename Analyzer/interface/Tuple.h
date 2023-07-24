@@ -74,6 +74,12 @@ struct Tuple {
   float Tree_HLTPFMHT;
   float Tree_HLTPFMHT_phi;
   float Tree_HLTPFMHT_sigf;
+  float Tree_L1MET;
+  float Tree_L1MET_phi;
+  float Tree_L1MHT;
+  float Tree_L1MHT_phi;
+  float Tree_L1ETSum;
+  float Tree_L1HTSum;
   bool Tree_matchedMuonWasFound;
   std::vector<int> Tree_gParticleId;
   std::vector<int> Tree_gParticleStatus;
