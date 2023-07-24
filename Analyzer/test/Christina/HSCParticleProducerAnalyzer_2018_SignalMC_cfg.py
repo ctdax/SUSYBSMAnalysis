@@ -102,7 +102,7 @@ if(options.SAMPLE=='isSignal' or options.SAMPLE=='isBckg'):
    process.genParticlesSkimmed = cms.EDFilter("GenParticleSelector",
         filter = cms.bool(False),
         src = cms.InputTag("genParticles"),
-        cut = cms.string('pt > 5.0'),
+        cut = cms.string('pt > 0.0'),
         stableOnly = cms.bool(True)
    )
 
