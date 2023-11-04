@@ -231,6 +231,7 @@ private:
   edm::EDGetTokenT<pat::PackedTriggerPrescales> triggerPrescalesToken_;
   edm::EDGetTokenT<trigger::TriggerEvent> trigEventToken_ ;
   edm::EDGetTokenT<l1t::EtSumBxCollection> l1TriggerEtSumToken_;
+  edm::EDGetTokenT<edm::TriggerResults> metFilterBitsToken_;
 
   string filterName_;
   string pathName_;

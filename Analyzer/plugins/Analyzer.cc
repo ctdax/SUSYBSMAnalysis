@@ -67,6 +67,7 @@ Analyzer::Analyzer(const edm::ParameterSet& iConfig)
       triggerPrescalesToken_(consumes<pat::PackedTriggerPrescales>(iConfig.getParameter<edm::InputTag>("triggerPrescales"))),
       trigEventToken_(consumes<trigger::TriggerEvent>(iConfig.getParameter<edm::InputTag>("TriggerSummary"))),
       l1TriggerEtSumToken_(consumes<l1t::EtSumBxCollection>(iConfig.getParameter<edm::InputTag>("l1TriggerEtSum"))),
+      metFilterBitsToken_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("metFilterBits"))),
       filterName_(iConfig.getParameter<std::string>("FilterName")),
       triggerPathNamesFile_(iConfig.getParameter<string> ("triggerPathNamesFile")),
       muonHLTFilterNamesFile_(iConfig.getParameter<string> ("muonHLTFilterNamesFile")),
@@ -1188,7 +1189,9 @@ for ( int q=0; q<MAX_MuonHLTFilters;q++) {
   float HLTCaloMHT = -10, HLTCaloMHT_phi = -10, HLTCaloMHT_sigf = -10;
   float HLTPFMET = -10, HLTPFMET_phi = -10, HLTPFMET_sigf = -10;
   float HLTPFMHT = -10, HLTPFMHT_phi = -10, HLTPFMHT_sigf = -10;
-  float L1MET = -10, L1MET_phi = -10, L1MHT = -10, L1MHT_phi = -10, L1ETSum = -10, L1HTSum = -10;
+  float L1MET = -10, L1MET_phi = -10, L1METHF = -10, L1METHF_phi = -10, L1MHT = -10, L1MHT_phi = -10, L1ETSum = -10, L1HTSum = -10;
+  bool Flag_goodVertices = false, Flag_globalSuperTightHalo2016Filter = false, Flag_HBHENoiseFilter = false, Flag_HBHENoiseIsoFilter = false, Flag_EcalDeadCellTriggerPrimitiveFilter = false, Flag_BadPFMuonFilter = false, Flag_BadChargedCandidateFilter = false, Flag_eeBadScFilter = false, Flag_ecalBadCalibFilter = false, Flag_allMETFilters = false;;
+
 
   //===================== Handle For RecoCaloMET ===================
   if (recoCaloMETHandle.isValid() && !recoCaloMETHandle->empty()) {
@@ -1261,15 +1264,66 @@ for ( int q=0; q<MAX_MuonHLTFilters;q++) {
 
   if(l1TriggerEtSumHandle.isValid()) {
     l1t::EtSumHelper hsum(l1TriggerEtSumHandle);
-    L1MET = hsum.MissingEt();
-    L1MET_phi = hsum.MissingEtPhi();
+
+    //L1MET = hsum.MissingEt();
+    //L1MET_phi = hsum.MissingEtPhi();
     L1MHT = hsum.MissingHt();
     L1MHT_phi = hsum.MissingHtPhi();
     L1ETSum = hsum.TotalEt();
     L1HTSum = hsum.TotalHt();
+
+    //energy sum
+    for (int itBX = l1TriggerEtSumHandle->getFirstBX(); itBX <= l1TriggerEtSumHandle->getLastBX(); ++itBX) {
+      for (l1t::EtSumBxCollection::const_iterator itEtSum = l1TriggerEtSumHandle->begin(itBX); itEtSum != l1TriggerEtSumHandle->end(itBX); ++itEtSum) {
+	if (itBX == 0) {
+	  if (l1t::EtSum::EtSumType::kMissingEt == itEtSum->getType()) { // MET
+	    L1MET = itEtSum->pt();
+	    L1MET_phi = itEtSum->phi();
+	    
+	  } else if (l1t::EtSum::EtSumType::kMissingEtHF == itEtSum->getType()) {  // METHF
+	    L1METHF = itEtSum->pt();
+	    L1METHF_phi = itEtSum->phi();
+	  }
+	}
+      }
+    }
+
+
   } else {
     std::cout<<"L1TriggerEtSum handle is invalid!"<<std::endl;
   }
+
+
+  //===================== Handle For MET filters ===================
+
+  edm::Handle<edm::TriggerResults> metFilterHandle;
+  iEvent.getByToken(metFilterBitsToken_, metFilterHandle);
+
+  if(metFilterHandle.isValid()) {
+    const edm::TriggerNames &metNames = iEvent.triggerNames(*metFilterHandle);
+
+    for(unsigned int i=0; i<metFilterHandle->size(); i++) {    
+      std::cout << metNames.triggerName(i) << std::endl;
+      if(strcmp(metNames.triggerName(i).c_str(), "Flag_goodVertices") == 0) Flag_goodVertices = metFilterHandle->accept(i);
+      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_globalSuperTightHalo2016Filter") == 0) Flag_globalSuperTightHalo2016Filter = metFilterHandle->accept(i);
+      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_HBHENoiseFilter") == 0) Flag_HBHENoiseFilter = metFilterHandle->accept(i);
+      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_HBHENoiseIsoFilter") == 0) Flag_HBHENoiseIsoFilter = metFilterHandle->accept(i);
+      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_EcalDeadCellTriggerPrimitiveFilter") == 0) Flag_EcalDeadCellTriggerPrimitiveFilter = metFilterHandle->accept(i);
+      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_BadPFMuonFilter") == 0) Flag_BadPFMuonFilter = metFilterHandle->accept(i);
+      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_BadChargedCandidateFilter") == 0) Flag_BadChargedCandidateFilter = metFilterHandle->accept(i);
+      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_eeBadScFilter") == 0) Flag_eeBadScFilter = metFilterHandle->accept(i);
+      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_ecalBadCalibFilter") == 0) Flag_ecalBadCalibFilter = metFilterHandle->accept(i);
+      else std::cout<< "MET filter name check failed!" <<std::endl;
+
+    } //loop over met filters
+
+  } else {
+    std::cout<<"MET Filter handle is invalid!"<<std::endl;
+  }
+
+
+
+
 
   // PF jet info for the ntuple
   unsigned int Jets_count = 0;
@@ -4884,10 +4938,22 @@ for ( int q=0; q<MAX_MuonHLTFilters;q++) {
                                 HLTPFMHT_sigf,
                                 L1MET,
                                 L1MET_phi,
+				L1METHF,
+				L1METHF_phi,
                                 L1MHT,
                                 L1MHT_phi,
                                 L1ETSum,
                                 L1HTSum,
+				Flag_goodVertices,
+				Flag_globalSuperTightHalo2016Filter,
+				Flag_HBHENoiseFilter,
+				Flag_HBHENoiseIsoFilter,
+				Flag_EcalDeadCellTriggerPrimitiveFilter,
+				Flag_BadPFMuonFilter,
+				Flag_BadChargedCandidateFilter,
+				Flag_eeBadScFilter,
+				Flag_ecalBadCalibFilter,
+				Flag_allMETFilters,
                                 matchedMuonWasFound,
                                 gParticleId,
                                 gParticleStatus,
@@ -5269,7 +5335,8 @@ void Analyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     ->setComment("A");
   desc.add("l1TriggerEtSum", edm::InputTag("caloStage2Digis","EtSum"))
     ->setComment("A");
-
+  desc.add("metFilterBits", edm::InputTag("TriggerResults", "", "RECO"))
+    ->setComment("A");
 
   desc.add("PileupInfo", edm::InputTag("addPileupInfo"))
     ->setComment("A");
