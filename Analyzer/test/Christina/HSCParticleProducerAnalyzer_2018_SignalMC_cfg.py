@@ -9,7 +9,7 @@ options = VarParsing('analysis')
 # defaults
 options.outputFile = 'Histos.root'
 # -1 means all events
-options.maxEvents = 100
+options.maxEvents = -1
 
 #options.register('GTAG', '106X_upgrade2018_realistic_v11_L1v1',
 options.register('GTAG', '106X_upgrade2018_realistic_v11BasedCandidateTmp_2022_08_09_01_32_34',
@@ -68,6 +68,8 @@ process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 process.load("Configuration.StandardSequences.Reconstruction_cff")
 process.load('Configuration.StandardSequences.Services_cff')
+process.load("SUSYBSMAnalysis.Analyzer.metFilters_cff")
+#process.load("RecoMET.METFilters.BadPFMuonFilter_cfi")
 
 process.options   = cms.untracked.PSet(
       wantSummary = cms.untracked.bool(True),
@@ -112,7 +114,7 @@ process.HSCPTuplePath = cms.Path()
 #Run the HSCP EDM-tuple Sequence on skimmed sample
 process.nEventsBefEDM   = cms.EDProducer("EventCountProducer")
 process.load("SUSYBSMAnalysis.HSCP.HSCParticleProducer_cff") 
-process.HSCPTuplePath += process.nEventsBefEDM + process.HSCParticleProducerSeq
+process.HSCPTuplePath += process.nEventsBefEDM + process.HSCParticleProducerSeq + process.metFilters
 
 ########################################################################  
 # Only for MC samples, save skimmed genParticles

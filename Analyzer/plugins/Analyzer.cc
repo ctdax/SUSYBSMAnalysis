@@ -67,7 +67,17 @@ Analyzer::Analyzer(const edm::ParameterSet& iConfig)
       triggerPrescalesToken_(consumes<pat::PackedTriggerPrescales>(iConfig.getParameter<edm::InputTag>("triggerPrescales"))),
       trigEventToken_(consumes<trigger::TriggerEvent>(iConfig.getParameter<edm::InputTag>("TriggerSummary"))),
       l1TriggerEtSumToken_(consumes<l1t::EtSumBxCollection>(iConfig.getParameter<edm::InputTag>("l1TriggerEtSum"))),
-      metFilterBitsToken_(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("metFilterBits"))),
+
+//primaryVertexFilterToken_(consumes<bool>(edm::InputTag("primaryVertexFilter"))),
+      globalSuperTightHalo2016FilterToken_(consumes<bool>(edm::InputTag("globalSuperTightHalo2016Filter"))),
+      HBHENoiseFilterToken_(consumes<bool>(edm::InputTag("HBHENoiseFilterResultProducer","HBHENoiseFilterResult"))),
+      HBHENoiseIsoFilterToken_(consumes<bool>(edm::InputTag("HBHENoiseFilterResultProducer","HBHEIsoNoiseFilterResult"))),
+      EcalDeadCellTriggerPrimitiveFilterToken_(consumes<bool>(edm::InputTag("EcalDeadCellTriggerPrimitiveFilter"))),
+      BadPFMuonFilterToken_(consumes<bool>(edm::InputTag("BadPFMuonFilter"))),
+      BadPFMuonDzFilterToken_(consumes<bool>(edm::InputTag("BadPFMuonDzFilter"))),
+      hfNoisyHitsFilterToken_(consumes<bool>(edm::InputTag("hfNoisyHitsFilter"))),
+      eeBadScFilterToken_(consumes<bool>(edm::InputTag("eeBadScFilter"))),
+      ecalBadCalibFilterToken_(consumes<bool>(edm::InputTag("ecalBadCalibFilter"))),
       filterName_(iConfig.getParameter<std::string>("FilterName")),
       triggerPathNamesFile_(iConfig.getParameter<string> ("triggerPathNamesFile")),
       muonHLTFilterNamesFile_(iConfig.getParameter<string> ("muonHLTFilterNamesFile")),
@@ -831,6 +841,7 @@ void Analyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) 
   // Collection for vertices
   vector<reco::Vertex> vertexColl = iEvent.get(offlinePrimaryVerticesToken_);
   int npv = 0;
+  int npvGood = 0;
   std::vector<float> pvX;
   std::vector<float> pvY;
   std::vector<float> pvZ;
@@ -870,8 +881,18 @@ void Analyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) 
         myPV = vertexColl[i];
         foundPV = true;
       }
+
      npv++;
 
+     if(
+	vertexColl[i].isValid() &&
+	!vertexColl[i].isFake() &&
+	vertexColl[i].ndof() > 4 &&
+	fabs(vertexColl[i].z()) <= 24 &&
+	vertexColl[i].position().rho() <= 2
+	) {
+       npvGood++;
+     }
   }
 
 
@@ -1190,7 +1211,8 @@ for ( int q=0; q<MAX_MuonHLTFilters;q++) {
   float HLTPFMET = -10, HLTPFMET_phi = -10, HLTPFMET_sigf = -10;
   float HLTPFMHT = -10, HLTPFMHT_phi = -10, HLTPFMHT_sigf = -10;
   float L1MET = -10, L1MET_phi = -10, L1METHF = -10, L1METHF_phi = -10, L1MHT = -10, L1MHT_phi = -10, L1ETSum = -10, L1HTSum = -10;
-  bool Flag_goodVertices = false, Flag_globalSuperTightHalo2016Filter = false, Flag_HBHENoiseFilter = false, Flag_HBHENoiseIsoFilter = false, Flag_EcalDeadCellTriggerPrimitiveFilter = false, Flag_BadPFMuonFilter = false, Flag_BadChargedCandidateFilter = false, Flag_eeBadScFilter = false, Flag_ecalBadCalibFilter = false, Flag_allMETFilters = false;;
+  //bool Flag_primaryVertexFilter = false;
+  bool Flag_globalSuperTightHalo2016Filter = false, Flag_HBHENoiseFilter = false, Flag_HBHENoiseIsoFilter = false, Flag_EcalDeadCellTriggerPrimitiveFilter = false, Flag_BadPFMuonFilter = false, Flag_BadPFMuonDzFilter = false, Flag_hfNoisyHitsFilter = false, Flag_eeBadScFilter = false, Flag_ecalBadCalibFilter = false, Flag_allMETFilters = false;
 
 
   //===================== Handle For RecoCaloMET ===================
@@ -1296,33 +1318,38 @@ for ( int q=0; q<MAX_MuonHLTFilters;q++) {
 
   //===================== Handle For MET filters ===================
 
-  edm::Handle<edm::TriggerResults> metFilterHandle;
-  iEvent.getByToken(metFilterBitsToken_, metFilterHandle);
+  //iEvent.getByToken(primaryVertexFilterToken_, primaryVertexFilterHandle);
+  iEvent.getByToken(globalSuperTightHalo2016FilterToken_, globalSuperTightHalo2016FilterHandle);
+  iEvent.getByToken(HBHENoiseFilterToken_, HBHENoiseFilterHandle);
+  iEvent.getByToken(HBHENoiseIsoFilterToken_, HBHENoiseIsoFilterHandle);
+  iEvent.getByToken(EcalDeadCellTriggerPrimitiveFilterToken_, EcalDeadCellTriggerPrimitiveFilterHandle);
+  iEvent.getByToken(BadPFMuonFilterToken_, BadPFMuonFilterHandle);
+  iEvent.getByToken(BadPFMuonDzFilterToken_, BadPFMuonDzFilterHandle);
+  iEvent.getByToken(hfNoisyHitsFilterToken_, hfNoisyHitsFilterHandle);
+  iEvent.getByToken(eeBadScFilterToken_, eeBadScFilterHandle);
+  iEvent.getByToken(ecalBadCalibFilterToken_, ecalBadCalibFilterHandle);
 
-  if(metFilterHandle.isValid()) {
-    const edm::TriggerNames &metNames = iEvent.triggerNames(*metFilterHandle);
-
-    for(unsigned int i=0; i<metFilterHandle->size(); i++) {    
-      std::cout << metNames.triggerName(i) << std::endl;
-      if(strcmp(metNames.triggerName(i).c_str(), "Flag_goodVertices") == 0) Flag_goodVertices = metFilterHandle->accept(i);
-      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_globalSuperTightHalo2016Filter") == 0) Flag_globalSuperTightHalo2016Filter = metFilterHandle->accept(i);
-      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_HBHENoiseFilter") == 0) Flag_HBHENoiseFilter = metFilterHandle->accept(i);
-      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_HBHENoiseIsoFilter") == 0) Flag_HBHENoiseIsoFilter = metFilterHandle->accept(i);
-      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_EcalDeadCellTriggerPrimitiveFilter") == 0) Flag_EcalDeadCellTriggerPrimitiveFilter = metFilterHandle->accept(i);
-      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_BadPFMuonFilter") == 0) Flag_BadPFMuonFilter = metFilterHandle->accept(i);
-      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_BadChargedCandidateFilter") == 0) Flag_BadChargedCandidateFilter = metFilterHandle->accept(i);
-      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_eeBadScFilter") == 0) Flag_eeBadScFilter = metFilterHandle->accept(i);
-      else if(strcmp(metNames.triggerName(i).c_str(), "Flag_ecalBadCalibFilter") == 0) Flag_ecalBadCalibFilter = metFilterHandle->accept(i);
-      else std::cout<< "MET filter name check failed!" <<std::endl;
-
-    } //loop over met filters
-
-  } else {
-    std::cout<<"MET Filter handle is invalid!"<<std::endl;
-  }
-
-
-
+  //Flag_primaryVertexFilter = *primaryVertexFilterHandle;
+  Flag_globalSuperTightHalo2016Filter = *globalSuperTightHalo2016FilterHandle;
+  Flag_HBHENoiseFilter = *HBHENoiseFilterHandle;
+  Flag_HBHENoiseIsoFilter = *HBHENoiseIsoFilterHandle;
+  Flag_EcalDeadCellTriggerPrimitiveFilter = *EcalDeadCellTriggerPrimitiveFilterHandle;
+  Flag_BadPFMuonFilter = *BadPFMuonFilterHandle;
+  Flag_BadPFMuonDzFilter = *BadPFMuonDzFilterHandle;
+  Flag_hfNoisyHitsFilter = *hfNoisyHitsFilterHandle;
+  Flag_eeBadScFilter = *eeBadScFilterHandle;
+  Flag_ecalBadCalibFilter = *ecalBadCalibFilterHandle;
+  Flag_allMETFilters =
+    //Flag_primaryVertexFilter &&
+    Flag_globalSuperTightHalo2016Filter && 
+    Flag_HBHENoiseFilter && 
+    Flag_HBHENoiseIsoFilter &&
+    Flag_EcalDeadCellTriggerPrimitiveFilter && 
+    Flag_BadPFMuonFilter && 
+    Flag_BadPFMuonDzFilter && 
+    Flag_hfNoisyHitsFilter && 
+    Flag_eeBadScFilter && 
+    Flag_ecalBadCalibFilter;
 
 
   // PF jet info for the ntuple
@@ -4890,6 +4917,7 @@ for ( int q=0; q<MAX_MuonHLTFilters;q++) {
                                 nPUmean,
                                 vertexColl.size(),
                                 npv,
+				npvGood,
                                 pvX,
                                 pvY,
                                 pvZ,
@@ -4944,13 +4972,14 @@ for ( int q=0; q<MAX_MuonHLTFilters;q++) {
                                 L1MHT_phi,
                                 L1ETSum,
                                 L1HTSum,
-				Flag_goodVertices,
+				//Flag_primaryVertexFilter,
 				Flag_globalSuperTightHalo2016Filter,
 				Flag_HBHENoiseFilter,
 				Flag_HBHENoiseIsoFilter,
 				Flag_EcalDeadCellTriggerPrimitiveFilter,
 				Flag_BadPFMuonFilter,
-				Flag_BadChargedCandidateFilter,
+				Flag_BadPFMuonDzFilter,
+				Flag_hfNoisyHitsFilter,
 				Flag_eeBadScFilter,
 				Flag_ecalBadCalibFilter,
 				Flag_allMETFilters,
@@ -5335,9 +5364,6 @@ void Analyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
     ->setComment("A");
   desc.add("l1TriggerEtSum", edm::InputTag("caloStage2Digis","EtSum"))
     ->setComment("A");
-  desc.add("metFilterBits", edm::InputTag("TriggerResults", "", "RECO"))
-    ->setComment("A");
-
   desc.add("PileupInfo", edm::InputTag("addPileupInfo"))
     ->setComment("A");
   desc.add("GenParticleCollection", edm::InputTag("genParticlesSkimmed"))
