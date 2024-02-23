@@ -80,9 +80,9 @@
 //HSCP specific packages
 #include "AnalysisDataFormats/SUSYBSMObjects/interface/HSCParticle.h"
 #include "AnalysisDataFormats/SUSYBSMObjects/interface/MuonSegment.h"
-#include "HSCP/SUSYBSMAnalysis/Analyzer/interface/CommonFunction.h" //Custom, not from CMSSW git
-#include "HSCP/SUSYBSMAnalysis/Analyzer/interface/DeDxUtility.h" //Custom, not from CMSSW git
-#include "HSCP/SUSYBSMAnalysis/HSCP/interface/HSCPHelpers.h" //Custom, not from CMSSW git
+#include "SUSYBSMAnalysis/Analyzer/interface/CommonFunction.h"
+#include "SUSYBSMAnalysis/Analyzer/interface/DeDxUtility.h"
+#include "SUSYBSMAnalysis/HSCP/interface/HSCPHelpers.h"
 
 //ROOT
 #include "TFile.h"
