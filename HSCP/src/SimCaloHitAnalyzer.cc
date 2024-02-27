@@ -44,6 +44,8 @@
 //Calorimiter
 #include "DataFormats/EcalDetId/interface/EBDetId.h"
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "SimDataFormats/CaloHit/interface/PCaloHit.h"
+#include "SimDataFormats/CaloHit/interface/PCaloHitContainer.h"
 
 //Muon Chamber
 #include "Geometry/Records/interface/MuonGeometryRecord.h"
@@ -77,13 +79,6 @@
 #include "DataFormats/TrackReco/interface/HitPattern.h"
 #include "DataFormats/TrackReco/interface/DeDxHitInfo.h"
 
-//HSCP specific packages
-#include "AnalysisDataFormats/SUSYBSMObjects/interface/HSCParticle.h"
-#include "AnalysisDataFormats/SUSYBSMObjects/interface/MuonSegment.h"
-#include "SUSYBSMAnalysis/Analyzer/interface/CommonFunction.h"
-#include "SUSYBSMAnalysis/Analyzer/interface/DeDxUtility.h"
-#include "SUSYBSMAnalysis/HSCP/interface/HSCPHelpers.h"
-
 //ROOT
 #include "TFile.h"
 #include "TH1.h"
@@ -99,6 +94,13 @@
 #include "TRandom3.h"
 #include "TVector3.h"
 #include "TGraph.h"
+
+//HSCP specific packages
+#include "AnalysisDataFormats/SUSYBSMObjects/interface/HSCParticle.h"
+#include "AnalysisDataFormats/SUSYBSMObjects/interface/MuonSegment.h"
+#include "SUSYBSMAnalysis/Analyzer/interface/CommonFunction.h"
+#include "SUSYBSMAnalysis/Analyzer/interface/DeDxUtility.h"
+#include "SUSYBSMAnalysis/HSCP/interface/HSCPHelpers.h"
 
 //FWCORE
 #define FWCORE
@@ -225,10 +227,10 @@ private:
   edm::EDGetTokenT <edm::PSimHitContainer> edmPSimHitContainer_pxlFwdHigh_Token_;
 
   // Calorimiter hits
-  edm::EDGetTokenT <edm::PSimHitContainer> edmCaloHitContainer_EcalHitsEB_Token_;
-  edm::EDGetTokenT <edm::PSimHitContainer> edmCaloHitContainer_EcalHitsEE_Token_;
-  edm::EDGetTokenT <edm::PSimHitContainer> edmCaloHitContainer_EcalHitsES_Token_;
-  edm::EDGetTokenT <edm::PSimHitContainer> edmCaloHitContainer_HcalHits_Token_;
+  edm::EDGetTokenT <edm::PCaloHitContainer> edmCaloHitContainer_EcalHitsEB_Token_;
+  edm::EDGetTokenT <edm::PCaloHitContainer> edmCaloHitContainer_EcalHitsEE_Token_;
+  edm::EDGetTokenT <edm::PCaloHitContainer> edmCaloHitContainer_EcalHitsES_Token_;
+  edm::EDGetTokenT <edm::PCaloHitContainer> edmCaloHitContainer_HcalHits_Token_;
 
 
   // Muon hits
@@ -676,21 +678,20 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
 
 
   // Output File
-  cout << " passevtcount01 = " << passevtcount01 << " evtcount01 = " << evtcount01 << " fraction = " << fr << endl;
   outputFile_ = new TFile("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/HSCP/Saturation/SimCaloHitAnalysis/test/RHadron.root");  
 
   // Declare ROOT histograms
-  EBHit_ieta = new TH1F("EBHit_ieta","EB_SimHits_ieta",100,-2.,2.)
-  EBHit_iphi = new TH1F("EBHit_iphi","EB_SimHits_iphi",100,-3.5,3.5)
-  EBHit_x = new TH1F("EBHit_x","EB_SimHits_x",100,-3.5,3.5)
-  EBHit_y = new TH1F("EBHit_y","EB_SimHits_y",100,-3.5,3.5)
-  EBHit_z = new TH1F("EBHit_z","EB_SimHits_z",100,-3.5,3.5)
-  RHadron1_px = new TH1F("RHadron1_px","RHadron1_px",100,-100.,100.)
-  RHadron1_py = new TH1F("RHadron1_py","RHadron1_py",100,-100.,100.)
-  RHadron1_pz = new TH1F("RHadron1_pz","RHadron1_pz",100,-100.,100.)
-  RHadron2_px = new TH1F("RHadron2_px","RHadron2_px",100,-100.,100.)
-  RHadron2_py = new TH1F("RHadron2_py","RHadron2_py",100,-100.,100.)
-  RHadron2_pz = new TH1F("RHadron2_pz","RHadron2_pz",100,-100.,100.)
+  EBHit_ieta = new TH1F("EBHit_ieta","EB_SimHits_ieta",100,-2.,2.);
+  EBHit_iphi = new TH1F("EBHit_iphi","EB_SimHits_iphi",100,-3.5,3.5);
+  EBHit_x = new TH1F("EBHit_x","EB_SimHits_x",100,-3.5,3.5);
+  EBHit_y = new TH1F("EBHit_y","EB_SimHits_y",100,-3.5,3.5);
+  EBHit_z = new TH1F("EBHit_z","EB_SimHits_z",100,-3.5,3.5);
+  RHadron1_px = new TH1F("RHadron1_px","RHadron1_px",100,-100.,100.);
+  RHadron1_py = new TH1F("RHadron1_py","RHadron1_py",100,-100.,100.);
+  RHadron1_pz = new TH1F("RHadron1_pz","RHadron1_pz",100,-100.,100.);
+  RHadron2_px = new TH1F("RHadron2_px","RHadron2_px",100,-100.,100.);
+  RHadron2_py = new TH1F("RHadron2_py","RHadron2_py",100,-100.,100.);
+  RHadron2_pz = new TH1F("RHadron2_pz","RHadron2_pz",100,-100.,100.);
 
   
   evtcount = 0;
@@ -715,70 +716,6 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
 
 //destructor
 SimCaloHitAnalyzer::~SimCaloHitAnalyzer() {
-
-  float fr = (float)passevtcount0/(float)evtcount;
-  //cout << " passevtcount0 = " << passevtcount0 << " evtcount = " << evtcount << " fraction = " << fr << endl;
-  fr = (float)passevtcount1/(float)evtcount;
-  //cout << " passevtcount1 = " << passevtcount1 << " evtcount = " << evtcount << " fraction = " << fr << endl;
-  fr = (float)passevtcount00/(float)evtcount00;
-  //cout << " passevtcount00 = " << passevtcount00 << " evtcount00 = " << evtcount00 << " fraction = " << fr << endl;
-  fr = (float)passevtcount01/(float)evtcount01;
-  //cout << " passevtcount01 = " << passevtcount01 << " evtcount01 = " << evtcount01 << " fraction = " << fr << endl;
-  fr = (float)passevtcount11/(float)evtcount11;
-  //cout << " passevtcount11 = " << passevtcount11 << " evtcount11 = " << evtcount11 << " fraction = " << fr << endl;
-  //cout << " badiqstat count = " << badiqstat << endl;
-
-  //cout << endl;
-  //cout << " # of charged R-hadron |eta|<0.9 = " << ngencheta09 << endl;
-  nsimmatch[0] = ngencheta09;
-  nsimnomatch[0] = ngencheta09;
-  nsimnomatchqsame[0] = ngencheta09;
-  nsimnomatchqdiff[0] = ngencheta09;
-  double nsimmatch2[NTRLAYERS];
-  double nsimnomatch2[NTRLAYERS];
-  double nsimnomatchqsame2[NTRLAYERS];
-  double nsimnomatchqdiff2[NTRLAYERS];
-  double nsimtotal2[NTRLAYERS];
-  double nsimmatchfrac[NTRLAYERS];
-  double nsimnomatchfrac[NTRLAYERS];
-  double nsimnomatchqsamefrac[NTRLAYERS];
-  double nsimnomatchqdifffrac[NTRLAYERS];
-  double nsimtotalfrac[NTRLAYERS];
-  for (int k=0; k<NTRLAYERS; k++) {
-    //cout << "   # of matched hits in layer " << k << " = " << nsimmatch[k] << endl;
-    nsimmatch2[k] = (double)nsimmatch[k];
-    nsimnomatch2[k] = (double)nsimnomatch[k];
-    nsimnomatchqsame2[k] = (double)nsimnomatchqsame[k];
-    nsimnomatchqdiff2[k] = (double)nsimnomatchqdiff[k];
-    if (k==0) {
-      nsimtotal2[0] = (double)nsimmatch[0];
-    } else {
-      nsimtotal2[k] = (double)nsimmatch[k] + (double)nsimnomatch[k];
-    }
-    nsimmatchfrac[k] = (double)nsimmatch[k]/(double)ngencheta09;
-    nsimnomatchfrac[k] = (double)nsimnomatch[k]/(double)ngencheta09;
-    nsimnomatchqsamefrac[k] = (double)nsimnomatchqsame[k]/(double)ngencheta09;
-    nsimnomatchqdifffrac[k] = (double)nsimnomatchqdiff[k]/(double)ngencheta09;
-    nsimtotalfrac[k] = (double)nsimtotal2[k]/(double)ngencheta09;
-  }
-  //cout << endl;
-   
-   std::vector<std::pair<int, int>> sortgenpairs;
-   int psize = genrhadcounts.size();
-   int lastlow = -999999999;
-   for (int i=0; i<psize; i++) {
-     pair<int, int> plow(lastlow,0);
-     int lowid = 999999999;
-     for (std::vector<std::pair<int, int>>::iterator it = genrhadcounts.begin(); (it != genrhadcounts.end()); ++it) {
-       int id = (*it).first;
-       if ((id<lowid)&&(id>lastlow)) {
-         plow = (*it);
-         lowid = id;
-       }
-     }
-     sortgenpairs.push_back(plow);
-     lastlow = plow.first;
-
   // Write histograms and file
   outputFile_->cd();
 
@@ -797,7 +734,6 @@ SimCaloHitAnalyzer::~SimCaloHitAnalyzer() {
   std::cout << "saving MET trigger histograms..." << std::endl;
   outputFile_->Write();
   outputFile_->Close();
-
 }
 
 void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
@@ -1032,16 +968,15 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
       int iclosest = -1;
       float dRclosest = 999999.;
       if (dR1<dR2) {
-        //htibdeltaRclosest->Fill(dR1);
         dRclosest = dR1;
         iclosest = 1;
         genrhadclosest = genrhad1;
       } else {
-        //htibdeltaRclosest->Fill(dR2);
         dRclosest = dR2;
         iclosest = 2;
         genrhadclosest = genrhad2;
       }
+      cout << "Particle ID of RHadron closest to SimTrackerHit = " << genrhadclosest->pdgId() << endl;
       int ilayer = -1;
       if (dRclosest<1.0) {
         if ((r>23)&&(r<29)) { // first layer
@@ -1052,8 +987,6 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
           ilayer = TIB0 + 3;
         } else if ((r>47)&&(r<53)) { // fourth layer
           ilayer = TIB0 + 4;
-        } else {
-          //cout << "didn't find layer " << r << " " << genrhadclosest->pdgId() << endl;
         }
       }
       if (ilayer>-1) {
@@ -1067,13 +1000,14 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
         }
       }
     }
+  }
 
   // Grab simulated calorimiter hits
-  edm::PCaloHitContainer::const_iterator itHit;
-  for (itHit = EcalEBContainer->begin(); itHit != EcalEBContainer->end(); ++itHit) {
-      DetId detid = DetId(itHit->detUnitId());
-      const GeomDetUnit *det = (const GeomDetUnit *)caloGeometry->idToDetUnit(detid);
-      GlobalPoint gpos = det->toGlobal(itHit->localPosition());
+  edm::PCaloHitContainer::const_iterator caloHit;
+  for (caloHit = EcalEBContainer->begin(); caloHit != EcalEBContainer->end(); ++caloHit) {
+      DetId detid = DetId(caloHit->detUnitId());
+      const GeomDetUnit *det = (const GeomDetUnit *)caloGeometry->getPosition(detid);
+      GlobalPoint gpos = det->toGlobal(caloHit->localPosition());
       float r = sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y());
 
       // Fill calohit location histograms
