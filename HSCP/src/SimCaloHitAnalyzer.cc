@@ -678,7 +678,7 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
 
 
   // Output File
-  outputFile_ = new TFile("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/HSCP/Saturation/SimCaloHitAnalysis/test/RHadron.root");  
+  outputFile_ = new TFile("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/SUSYBSMAnalysis/HSCP/test/RHadronP_SimCaloHitPos_EXO-RunIISummer20UL18GENSIM-00010-v3.root", "RECREATE");  
 
   // Declare ROOT histograms
   EBHit_ieta = new TH1F("EBHit_ieta","EB_SimHits_ieta",100,-2.,2.);
@@ -867,31 +867,31 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     // Get calorimiter information//
     ////////////////////////////////
     //EcalEB
-    edm::Handle<edm::PSimHitContainer> EcalEBContainer;
+    edm::Handle<edm::PCaloHitContainer> EcalEBContainer;
     iEvent.getByToken(edmCaloHitContainer_EcalHitsEB_Token_, EcalEBContainer);
     if (!EcalEBContainer.isValid()) {
-        edm::LogError("TrackerHitProducer::analyze") << "Unable to find EcalHitsEB in event!";
+        edm::LogError("CaloHitProducer::analyze") << "Unable to find EcalHitsEB in event!";
         return;
    }
     //EcalEE
-    edm::Handle<edm::PSimHitContainer> EcalEEContainer;
+    edm::Handle<edm::PCaloHitContainer> EcalEEContainer;
     iEvent.getByToken(edmCaloHitContainer_EcalHitsEE_Token_, EcalEEContainer);
     if (!EcalEEContainer.isValid()) {
-        edm::LogError("TrackerHitProducer::analyze") << "Unable to find EcalHitsEE in event!";
+        edm::LogError("CaloHitProducer::analyze") << "Unable to find EcalHitsEE in event!";
         return;
    }
     //EcalES
-    edm::Handle<edm::PSimHitContainer> EcalESContainer;
+    edm::Handle<edm::PCaloHitContainer> EcalESContainer;
     iEvent.getByToken(edmCaloHitContainer_EcalHitsES_Token_, EcalESContainer);
     if (!EcalESContainer.isValid()) {
-        edm::LogError("TrackerHitProducer::analyze") << "Unable to find EcalHitsES in event!";
+        edm::LogError("CaloHitProducer::analyze") << "Unable to find EcalHitsES in event!";
         return;
    }
     //Hcal
-    edm::Handle<edm::PSimHitContainer> HcalContainer;
+    edm::Handle<edm::PCaloHitContainer> HcalContainer;
     iEvent.getByToken(edmCaloHitContainer_HcalHits_Token_, HcalContainer);
     if (!HcalContainer.isValid()) {
-        edm::LogError("TrackerHitProducer::analyze") << "Unable to find HcalHits in event!";
+        edm::LogError("CaloHitProducer::analyze") << "Unable to find HcalHits in event!";
         return;
    }
 
@@ -937,7 +937,6 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
 // Get R-Hadron properties from the tracker
   edm::PSimHitContainer::const_iterator itHit;
 
-  int icount = 0;
   int nhitstib[20] = {0,0,0,0,0,0,0,0,0,0};
   int nhitstib1[20] = {0,0,0,0,0,0,0,0,0,0};
   int nhitstib2[20] = {0,0,0,0,0,0,0,0,0,0};
@@ -1002,13 +1001,14 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     }
   }
 
-  // Grab simulated calorimiter hits
+  // Grab simulated calorimiter hits in EB
   edm::PCaloHitContainer::const_iterator caloHit;
   for (caloHit = EcalEBContainer->begin(); caloHit != EcalEBContainer->end(); ++caloHit) {
-      DetId detid = DetId(caloHit->detUnitId());
-      const GeomDetUnit *det = (const GeomDetUnit *)caloGeometry->getPosition(detid);
-      GlobalPoint gpos = det->toGlobal(caloHit->localPosition());
-      float r = sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y());
+      DetId detid = DetId(caloHit->id());
+      GlobalPoint gpos = caloGeometry->getPosition(detid);
+      //const GeomDetUnit *det = (const GeomDetUnit *)caloGeometry->getPosition(detid);
+      //GlobalPoint gpos = det->toGlobal(caloHit->localPosition());
+      //float r = sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y());
 
       // Fill calohit location histograms
       EBHit_ieta->Fill(gpos.eta());
