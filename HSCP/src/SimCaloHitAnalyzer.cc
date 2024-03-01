@@ -46,6 +46,7 @@
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 #include "SimDataFormats/CaloHit/interface/PCaloHit.h"
 #include "SimDataFormats/CaloHit/interface/PCaloHitContainer.h"
+#include "Geometry/Records/interface/CaloGeometryRecord.h"
 
 //Muon Chamber
 #include "Geometry/Records/interface/MuonGeometryRecord.h"
@@ -900,7 +901,7 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    iSetup.get<TrackerDigiGeometryRecord>().get(tkGeometry);
 
    edm::ESHandle<CaloGeometry> caloGeometry;
-   iSetup.get<IdealGeometryRecord>().get(caloGeometry); 
+   iSetup.get<CaloGeometryRecord>().get(caloGeometry); 
 
    // Find R-hadrons
    const reco::GenParticle *genrhad1=0;
@@ -963,19 +964,19 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
       RHadron2_py->Fill(genrhad2->p4().py());
       RHadron2_pz->Fill(genrhad2->p4().pz());
       
-      const reco::GenParticle *genrhadclosest=0;
+      //const reco::GenParticle *genrhadclosest=0;
       int iclosest = -1;
       float dRclosest = 999999.;
       if (dR1<dR2) {
         dRclosest = dR1;
         iclosest = 1;
-        genrhadclosest = genrhad1;
+        //genrhadclosest = genrhad1;
       } else {
         dRclosest = dR2;
         iclosest = 2;
-        genrhadclosest = genrhad2;
+        //genrhadclosest = genrhad2;
       }
-      cout << "Particle ID of RHadron closest to SimTrackerHit = " << genrhadclosest->pdgId() << endl;
+      
       int ilayer = -1;
       if (dRclosest<1.0) {
         if ((r>23)&&(r<29)) { // first layer
@@ -1004,18 +1005,15 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
   // Grab simulated calorimiter hits in EB
   edm::PCaloHitContainer::const_iterator caloHit;
   for (caloHit = EcalEBContainer->begin(); caloHit != EcalEBContainer->end(); ++caloHit) {
-      DetId detid = DetId(caloHit->id());
-      GlobalPoint gpos = caloGeometry->getPosition(detid);
-      //const GeomDetUnit *det = (const GeomDetUnit *)caloGeometry->getPosition(detid);
-      //GlobalPoint gpos = det->toGlobal(caloHit->localPosition());
-      //float r = sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y());
+    DetId detid = DetId(caloHit->id());
+    GlobalPoint gpos = caloGeometry->getPosition(detid);
 
-      // Fill calohit location histograms
-      EBHit_ieta->Fill(gpos.eta());
-      EBHit_iphi->Fill(gpos.phi());
-      EBHit_x->Fill(gpos.x());
-      EBHit_y->Fill(gpos.y());
-      EBHit_z->Fill(gpos.z());
+    // Fill calohit location histograms
+    EBHit_ieta->Fill(gpos.eta());
+    EBHit_iphi->Fill(gpos.phi());
+    EBHit_x->Fill(gpos.x());
+    EBHit_y->Fill(gpos.y());
+    EBHit_z->Fill(gpos.z());
   }
 }
 
