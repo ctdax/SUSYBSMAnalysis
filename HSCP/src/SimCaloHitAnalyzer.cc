@@ -280,11 +280,16 @@ private:
   float dEdxSF[2] = {dEdxSF_0_, dEdxSF_1_};
 
   TFile *outputFile_;
-  TH1F *EBHits_eta;
-  TH1F *EBHits_phi;
-  TH1F *EBHits_x;
-  TH1F *EBHits_y;
-  TH1F *EBHits_z;
+  TH1F *ECalHits_eta;
+  TH1F *ECalHits_phi;
+  TH1F *ECalHits_x;
+  TH1F *ECalHits_y;
+  TH1F *ECalHits_z;
+  TH1F *HCalHits_eta;
+  TH1F *HCalHits_phi;
+  TH1F *HCalHits_x;
+  TH1F *HCalHits_y;
+  TH1F *HCalHits_z;
   TH1F *RHadron1_px;
   TH1F *RHadron1_py;
   TH1F *RHadron1_pz;
@@ -682,11 +687,18 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
   outputFile_ = new TFile("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/SUSYBSMAnalysis/HSCP/test/RHadronP_SimCaloHitPos_EXO-RunIISummer20UL18GENSIM-00010-v3.root", "RECREATE");  
 
   // Declare ROOT histograms
-  EBHits_eta = new TH1F("EBHits_eta","EBHits_eta",50,-2.,2.);
-  EBHits_phi = new TH1F("EBHits_phi","EBHits_phi",50,-3.5,3.5);
-  EBHits_x = new TH1F("EBHits_x","EBHits_x",50,-100.,100.);
-  EBHits_y = new TH1F("EBHits_y","EBHits_y",50,-100.,100.);
-  EBHits_z = new TH1F("EBHits_z","EBHits_z",50,-100.,100.);
+  ECalHits_eta = new TH1F("ECalHits_eta","ECalHits_eta",50,-2.,2.);
+  ECalHits_phi = new TH1F("ECalHits_phi","ECalHits_phi",50,-3.5,3.5);
+  ECalHits_x = new TH1F("ECalHits_x","ECalHits_x",50,-1000.,1000.);
+  ECalHits_y = new TH1F("ECalHits_y","ECalHits_y",50,-1000.,1000.);
+  ECalHits_z = new TH1F("ECalHits_z","ECalHits_z",50,-1000.,1000.);
+
+  HCalHits_eta = new TH1F("HCalHits_eta","HCalHits_eta",50,-2.,2.);
+  HCalHits_phi = new TH1F("HCalHits_phi","HCalHits_phi",50,-3.5,3.5);
+  HCalHits_x = new TH1F("HCalHits_x","HCalHits_x",50,-1000.,1000.);
+  HCalHits_y = new TH1F("HCalHits_y","HCalHits_y",50,-1000.,1000.);
+  HCalHits_z = new TH1F("HCalHits_z","HCalHits_z",50,-1000.,1000.);
+
   RHadron1_px = new TH1F("RHadron1_px","RHadron1_px",100,-10000.,10000.);
   RHadron1_py = new TH1F("RHadron1_py","RHadron1_py",100,-10000.,10000.);
   RHadron1_pz = new TH1F("RHadron1_pz","RHadron1_pz",100,-10000.,10000.);
@@ -720,11 +732,18 @@ SimCaloHitAnalyzer::~SimCaloHitAnalyzer() {
   // Write histograms and file
   outputFile_->cd();
 
-  EBHits_eta->Write();
-  EBHits_phi->Write();
-  EBHits_x->Write();
-  EBHits_y->Write();
-  EBHits_z->Write();
+  ECalHits_eta->Write();
+  ECalHits_phi->Write();
+  ECalHits_x->Write();
+  ECalHits_y->Write();
+  ECalHits_z->Write();
+
+  HCalHits_eta->Write();
+  HCalHits_phi->Write();
+  HCalHits_x->Write();
+  HCalHits_y->Write();
+  HCalHits_z->Write();
+
   RHadron1_px->Write();
   RHadron1_py->Write();
   RHadron1_pz->Write();
@@ -909,14 +928,14 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
 
    for (unsigned int ig=0;ig<genColl->size();ig++) {
      const reco::GenParticle & part = (*genColl)[ig];
-     if ((abs(part.pdgId())>999999)&&(part.status()==1)) {
+     if ((abs(part.pdgId())>1000600)&&(abs(part.pdgId())<1100000)&&(part.status()==1)) {
    //cout << "SUSY part = " << part.pdgId() << endl;
        if (genrhad1==0) {
          genrhad1 = &(*genColl)[ig];
        } else if (genrhad2==0) {
          genrhad2 = &(*genColl)[ig];
        } else {
-         //std::cout << "WARNING - found more than two R-hadrons" << std::endl;
+         std::cout << "WARNING - found more than two R-hadrons" << std::endl;
        }
          // find and increment count
        bool found = false;
@@ -935,19 +954,22 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
      }
    }
 
-// Get R-Hadron properties from the tracker
+  //Plot Rhadron momenta
   RHadron1_px->Fill(genrhad1->p4().px());
   RHadron1_py->Fill(genrhad1->p4().py());
   RHadron1_pz->Fill(genrhad1->p4().pz());
   RHadron2_px->Fill(genrhad2->p4().px());
   RHadron2_py->Fill(genrhad2->p4().py());
   RHadron2_pz->Fill(genrhad2->p4().pz());
+
+  //Check the tracker for R-hadron hits
   edm::PSimHitContainer::const_iterator itHit;
 
   int nhitstib[20] = {0,0,0,0,0,0,0,0,0,0};
   int nhitstib1[20] = {0,0,0,0,0,0,0,0,0,0};
   int nhitstib2[20] = {0,0,0,0,0,0,0,0,0,0};
 
+  //TIB
   for (itHit = SiTIBLowContainer->begin(); itHit != SiTIBLowContainer->end(); ++itHit) {
     DetId detid = DetId(itHit->detUnitId());
     const GeomDetUnit *det = (const GeomDetUnit *)tkGeometry->idToDetUnit(detid);
@@ -961,14 +983,6 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
       float deta2 = genrhad2->eta() - gpos.eta();
       float dR1 = sqrt(dphi1*dphi1+deta1*deta1);
       float dR2 = sqrt(dphi2*dphi2+deta2*deta2);
-
-      // Fill R-Hadron momentum histograms
-      //RHadron1_px->Fill(genrhad1->p4().px());
-      //RHadron1_py->Fill(genrhad1->p4().py());
-      //RHadron1_pz->Fill(genrhad1->p4().pz());
-      //RHadron2_px->Fill(genrhad2->p4().px());
-      //RHadron2_py->Fill(genrhad2->p4().py());
-      //RHadron2_pz->Fill(genrhad2->p4().pz());
       
       //const reco::GenParticle *genrhadclosest=0;
       int iclosest = -1;
@@ -1008,18 +1022,57 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     }
   }
 
-  // Grab simulated calorimiter hits in EB
+  // Grab calorimiter hits in EB
   edm::PCaloHitContainer::const_iterator caloHit;
   for (caloHit = EcalEBContainer->begin(); caloHit != EcalEBContainer->end(); ++caloHit) {
     DetId detid = DetId(caloHit->id());
     GlobalPoint gpos = caloGeometry->getPosition(detid);
 
     // Fill calohit location histograms
-    EBHits_eta->Fill(gpos.eta());
-    EBHits_phi->Fill(gpos.phi());
-    EBHits_x->Fill(gpos.x());
-    EBHits_y->Fill(gpos.y());
-    EBHits_z->Fill(gpos.z());
+    ECalHits_eta->Fill(gpos.eta());
+    ECalHits_phi->Fill(gpos.phi());
+    ECalHits_x->Fill(gpos.x());
+    ECalHits_y->Fill(gpos.y());
+    ECalHits_z->Fill(gpos.z());
+  }
+
+  // Grab calorimiter hits in ES
+  for (caloHit = EcalESContainer->begin(); caloHit != EcalESContainer->end(); ++caloHit) {
+    DetId detid = DetId(caloHit->id());
+    GlobalPoint gpos = caloGeometry->getPosition(detid);
+
+    // Fill calohit location histograms
+    ECalHits_eta->Fill(gpos.eta());
+    ECalHits_phi->Fill(gpos.phi());
+    ECalHits_x->Fill(gpos.x());
+    ECalHits_y->Fill(gpos.y());
+    ECalHits_z->Fill(gpos.z());
+  }
+
+  // Grab calorimiter hits in EE
+  for (caloHit = EcalEEContainer->begin(); caloHit != EcalEEContainer->end(); ++caloHit) {
+    DetId detid = DetId(caloHit->id());
+    GlobalPoint gpos = caloGeometry->getPosition(detid);
+
+    // Fill calohit location histograms
+    ECalHits_eta->Fill(gpos.eta());
+    ECalHits_phi->Fill(gpos.phi());
+    ECalHits_x->Fill(gpos.x());
+    ECalHits_y->Fill(gpos.y());
+    ECalHits_z->Fill(gpos.z());
+  }
+
+  // Grab calorimiter hits in HCal
+  for (caloHit = HcalContainer->begin(); caloHit != HcalContainer->end(); ++caloHit) {
+    DetId detid = DetId(caloHit->id());
+    GlobalPoint gpos = caloGeometry->getPosition(detid);
+
+    // Fill calohit location histograms
+    HCalHits_eta->Fill(gpos.eta());
+    HCalHits_phi->Fill(gpos.phi());
+    HCalHits_x->Fill(gpos.x());
+    HCalHits_y->Fill(gpos.y());
+    HCalHits_z->Fill(gpos.z());
   }
 }
 
