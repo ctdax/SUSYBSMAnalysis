@@ -280,11 +280,11 @@ private:
   float dEdxSF[2] = {dEdxSF_0_, dEdxSF_1_};
 
   TFile *outputFile_;
-  TH1F *EBHit_ieta;
-  TH1F *EBHit_iphi;
-  TH1F *EBHit_x;
-  TH1F *EBHit_y;
-  TH1F *EBHit_z;
+  TH1F *EBHits_eta;
+  TH1F *EBHits_phi;
+  TH1F *EBHits_x;
+  TH1F *EBHits_y;
+  TH1F *EBHits_z;
   TH1F *RHadron1_px;
   TH1F *RHadron1_py;
   TH1F *RHadron1_pz;
@@ -682,17 +682,17 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
   outputFile_ = new TFile("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/SUSYBSMAnalysis/HSCP/test/RHadronP_SimCaloHitPos_EXO-RunIISummer20UL18GENSIM-00010-v3.root", "RECREATE");  
 
   // Declare ROOT histograms
-  EBHit_ieta = new TH1F("EBHit_ieta","EB_SimHits_ieta",100,-2.,2.);
-  EBHit_iphi = new TH1F("EBHit_iphi","EB_SimHits_iphi",100,-3.5,3.5);
-  EBHit_x = new TH1F("EBHit_x","EB_SimHits_x",100,-3.5,3.5);
-  EBHit_y = new TH1F("EBHit_y","EB_SimHits_y",100,-3.5,3.5);
-  EBHit_z = new TH1F("EBHit_z","EB_SimHits_z",100,-3.5,3.5);
-  RHadron1_px = new TH1F("RHadron1_px","RHadron1_px",100,-100.,100.);
-  RHadron1_py = new TH1F("RHadron1_py","RHadron1_py",100,-100.,100.);
-  RHadron1_pz = new TH1F("RHadron1_pz","RHadron1_pz",100,-100.,100.);
-  RHadron2_px = new TH1F("RHadron2_px","RHadron2_px",100,-100.,100.);
-  RHadron2_py = new TH1F("RHadron2_py","RHadron2_py",100,-100.,100.);
-  RHadron2_pz = new TH1F("RHadron2_pz","RHadron2_pz",100,-100.,100.);
+  EBHits_eta = new TH1F("EBHits_eta","EBHits_eta",50,-2.,2.);
+  EBHits_phi = new TH1F("EBHits_phi","EBHits_phi",50,-3.5,3.5);
+  EBHits_x = new TH1F("EBHits_x","EBHits_x",50,-100.,100.);
+  EBHits_y = new TH1F("EBHits_y","EBHits_y",50,-100.,100.);
+  EBHits_z = new TH1F("EBHits_z","EBHits_z",50,-100.,100.);
+  RHadron1_px = new TH1F("RHadron1_px","RHadron1_px",100,-10000.,10000.);
+  RHadron1_py = new TH1F("RHadron1_py","RHadron1_py",100,-10000.,10000.);
+  RHadron1_pz = new TH1F("RHadron1_pz","RHadron1_pz",100,-10000.,10000.);
+  RHadron2_px = new TH1F("RHadron2_px","RHadron2_px",100,-10000.,10000.);
+  RHadron2_py = new TH1F("RHadron2_py","RHadron2_py",100,-10000.,10000.);
+  RHadron2_pz = new TH1F("RHadron2_pz","RHadron2_pz",100,-10000.,10000.);
 
   
   evtcount = 0;
@@ -720,11 +720,11 @@ SimCaloHitAnalyzer::~SimCaloHitAnalyzer() {
   // Write histograms and file
   outputFile_->cd();
 
-  EBHit_ieta->Write();
-  EBHit_iphi->Write();
-  EBHit_x->Write();
-  EBHit_y->Write();
-  EBHit_z->Write();
+  EBHits_eta->Write();
+  EBHits_phi->Write();
+  EBHits_x->Write();
+  EBHits_y->Write();
+  EBHits_z->Write();
   RHadron1_px->Write();
   RHadron1_py->Write();
   RHadron1_pz->Write();
@@ -936,6 +936,12 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    }
 
 // Get R-Hadron properties from the tracker
+  RHadron1_px->Fill(genrhad1->p4().px());
+  RHadron1_py->Fill(genrhad1->p4().py());
+  RHadron1_pz->Fill(genrhad1->p4().pz());
+  RHadron2_px->Fill(genrhad2->p4().px());
+  RHadron2_py->Fill(genrhad2->p4().py());
+  RHadron2_pz->Fill(genrhad2->p4().pz());
   edm::PSimHitContainer::const_iterator itHit;
 
   int nhitstib[20] = {0,0,0,0,0,0,0,0,0,0};
@@ -948,7 +954,7 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     GlobalPoint gpos = det->toGlobal(itHit->localPosition());
     float r = sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y());
 
-    if ((abs(itHit->particleType())>999999)&&(abs(itHit->particleType())<999999999)) {
+    if ((abs(itHit->particleType())>1000600)&&(abs(itHit->particleType())<1100000)) {
       float dphi1 = genrhad1->phi() - gpos.phi();
       float dphi2 = genrhad2->phi() - gpos.phi();
       float deta1 = genrhad1->eta() - gpos.eta();
@@ -957,12 +963,12 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
       float dR2 = sqrt(dphi2*dphi2+deta2*deta2);
 
       // Fill R-Hadron momentum histograms
-      RHadron1_px->Fill(genrhad1->p4().px());
-      RHadron1_py->Fill(genrhad1->p4().py());
-      RHadron1_pz->Fill(genrhad1->p4().pz());
-      RHadron2_px->Fill(genrhad2->p4().px());
-      RHadron2_py->Fill(genrhad2->p4().py());
-      RHadron2_pz->Fill(genrhad2->p4().pz());
+      //RHadron1_px->Fill(genrhad1->p4().px());
+      //RHadron1_py->Fill(genrhad1->p4().py());
+      //RHadron1_pz->Fill(genrhad1->p4().pz());
+      //RHadron2_px->Fill(genrhad2->p4().px());
+      //RHadron2_py->Fill(genrhad2->p4().py());
+      //RHadron2_pz->Fill(genrhad2->p4().pz());
       
       //const reco::GenParticle *genrhadclosest=0;
       int iclosest = -1;
@@ -1009,11 +1015,11 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     GlobalPoint gpos = caloGeometry->getPosition(detid);
 
     // Fill calohit location histograms
-    EBHit_ieta->Fill(gpos.eta());
-    EBHit_iphi->Fill(gpos.phi());
-    EBHit_x->Fill(gpos.x());
-    EBHit_y->Fill(gpos.y());
-    EBHit_z->Fill(gpos.z());
+    EBHits_eta->Fill(gpos.eta());
+    EBHits_phi->Fill(gpos.phi());
+    EBHits_x->Fill(gpos.x());
+    EBHits_y->Fill(gpos.y());
+    EBHits_z->Fill(gpos.z());
   }
 }
 
