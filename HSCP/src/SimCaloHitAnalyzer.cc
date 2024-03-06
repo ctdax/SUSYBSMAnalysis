@@ -687,13 +687,13 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
   outputFile_ = new TFile("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/SUSYBSMAnalysis/HSCP/test/RHadronP_SimCaloHitPos_EXO-RunIISummer20UL18GENSIM-00010-v3.root", "RECREATE");  
 
   // Declare ROOT histograms
-  ECalHits_eta = new TH1F("ECalHits_eta","ECalHits_eta",50,-2.,2.);
+  ECalHits_eta = new TH1F("ECalHits_eta","ECalHits_eta",50,-10.,10.);
   ECalHits_phi = new TH1F("ECalHits_phi","ECalHits_phi",50,-3.5,3.5);
   ECalHits_x = new TH1F("ECalHits_x","ECalHits_x",50,-1000.,1000.);
   ECalHits_y = new TH1F("ECalHits_y","ECalHits_y",50,-1000.,1000.);
   ECalHits_z = new TH1F("ECalHits_z","ECalHits_z",50,-1000.,1000.);
 
-  HCalHits_eta = new TH1F("HCalHits_eta","HCalHits_eta",50,-2.,2.);
+  HCalHits_eta = new TH1F("HCalHits_eta","HCalHits_eta",50,-10.,10.);
   HCalHits_phi = new TH1F("HCalHits_phi","HCalHits_phi",50,-3.5,3.5);
   HCalHits_x = new TH1F("HCalHits_x","HCalHits_x",50,-1000.,1000.);
   HCalHits_y = new TH1F("HCalHits_y","HCalHits_y",50,-1000.,1000.);
@@ -1035,7 +1035,7 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     ECalHits_y->Fill(gpos.y());
     ECalHits_z->Fill(gpos.z());
   }
-
+  
   // Grab calorimiter hits in ES
   for (caloHit = EcalESContainer->begin(); caloHit != EcalESContainer->end(); ++caloHit) {
     DetId detid = DetId(caloHit->id());
