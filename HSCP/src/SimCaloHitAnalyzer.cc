@@ -42,11 +42,14 @@
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
 
 //Calorimiter
-#include "DataFormats/EcalDetId/interface/EBDetId.h"
-#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 #include "SimDataFormats/CaloHit/interface/PCaloHit.h"
 #include "SimDataFormats/CaloHit/interface/PCaloHitContainer.h"
+#include "DataFormats/EcalDetId/interface/EBDetId.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
+#include "Geometry/Records/interface/HcalGeometryRecord.h"
+#include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
+#include "DataFormats/HcalDetId/interface/HcalDetId.h"
 
 //Muon Chamber
 #include "Geometry/Records/interface/MuonGeometryRecord.h"
@@ -922,6 +925,9 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    edm::ESHandle<CaloGeometry> caloGeometry;
    iSetup.get<CaloGeometryRecord>().get(caloGeometry); 
 
+   //edm::ESHandle<HcalGeometry> HcalGeometry;
+   //iSetup.get<HcalGeometryRecord>().get(HcalGeometry); 
+
    // Find R-hadrons
    const reco::GenParticle *genrhad1=0;
    const reco::GenParticle *genrhad2=0;
@@ -1048,7 +1054,7 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     ECalHits_y->Fill(gpos.y());
     ECalHits_z->Fill(gpos.z());
   }
-
+  
   // Grab calorimiter hits in EE
   for (caloHit = EcalEEContainer->begin(); caloHit != EcalEEContainer->end(); ++caloHit) {
     DetId detid = DetId(caloHit->id());
