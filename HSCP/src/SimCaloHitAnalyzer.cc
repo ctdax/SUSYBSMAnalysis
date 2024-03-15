@@ -8,7 +8,7 @@
  Description: [Reads SIM ROOTs with gluino samples and outputs histograms for: calorimiter hit location, 4 momenta of R-Hadrons 1 and 2, ...]
 
  Implementation:
-     [Github repository: https://github.com/ctdax/HSCP]
+     [Github repository: https://github.com/ctdax/SUSYBSMAnalysis]
 */
 //
 // Original Author:  Colby Thompson
@@ -283,13 +283,17 @@ private:
   float dEdxSF[2] = {dEdxSF_0_, dEdxSF_1_};
 
   TFile *outputFile_;
+  TH1F *ECalHits_energy;
   TH1F *ECalHits_eta;
   TH1F *ECalHits_phi;
+  TH2F *ECalHits_2DEtaPhi;
   TH1F *ECalHits_x;
   TH1F *ECalHits_y;
   TH1F *ECalHits_z;
+  TH1F *HCalHits_energy;
   TH1F *HCalHits_eta;
   TH1F *HCalHits_phi;
+  TH2F *HCalHits_2DEtaPhi;
   TH1F *HCalHits_x;
   TH1F *HCalHits_y;
   TH1F *HCalHits_z;
@@ -690,14 +694,18 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
   outputFile_ = new TFile("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/SUSYBSMAnalysis/HSCP/test/RHadronP_SimCaloHitPos_EXO-RunIISummer20UL18GENSIM-00010-v3.root", "RECREATE");  
 
   // Declare ROOT histograms
-  ECalHits_eta = new TH1F("ECalHits_eta","ECalHits_eta",50,-10.,10.);
+  ECalHits_energy = new TH1F("ECalHits_energy","ECalHits_energy",100,0.,200.);
+  ECalHits_eta = new TH1F("ECalHits_eta","ECalHits_eta",50,-4.,4.);
   ECalHits_phi = new TH1F("ECalHits_phi","ECalHits_phi",50,-3.5,3.5);
+  ECalHits_2DEtaPhi = new TH2F("ECalHits_2DEtaPhi","ECalHits_2DEtaPhi",50,-4.,4.,50,-3.5,3.5);
   ECalHits_x = new TH1F("ECalHits_x","ECalHits_x",50,-1000.,1000.);
   ECalHits_y = new TH1F("ECalHits_y","ECalHits_y",50,-1000.,1000.);
   ECalHits_z = new TH1F("ECalHits_z","ECalHits_z",50,-1000.,1000.);
 
-  HCalHits_eta = new TH1F("HCalHits_eta","HCalHits_eta",50,-10.,10.);
+  HCalHits_energy = new TH1F("HCalHits_energy","HCalHits_energy",100,0.,200.);
+  HCalHits_eta = new TH1F("HCalHits_eta","HCalHits_eta",50,-4.,4.);
   HCalHits_phi = new TH1F("HCalHits_phi","HCalHits_phi",50,-3.5,3.5);
+  HCalHits_2DEtaPhi = new TH2F("HCalHits_2DEtaPhi","HCalHits_2DEtaPhi",50,-4.,4.,50,-3.5,3.5);
   HCalHits_x = new TH1F("HCalHits_x","HCalHits_x",50,-1000.,1000.);
   HCalHits_y = new TH1F("HCalHits_y","HCalHits_y",50,-1000.,1000.);
   HCalHits_z = new TH1F("HCalHits_z","HCalHits_z",50,-1000.,1000.);
@@ -735,17 +743,33 @@ SimCaloHitAnalyzer::~SimCaloHitAnalyzer() {
   // Write histograms and file
   outputFile_->cd();
 
+  ECalHits_energy->Write();
+  ECalHits_energy->GetXaxis()->SetTitle("[GeV]");
   ECalHits_eta->Write();
   ECalHits_phi->Write();
+  ECalHits_2DEtaPhi->Write();
+  ECalHits_2DEtaPhi->GetXaxis()->SetTitle("[#eta]");
+  ECalHits_2DEtaPhi->GetYaxis()->SetTitle("[#phi]");
   ECalHits_x->Write();
+  ECalHits_x->GetXaxis()->SetTitle("[m]");
   ECalHits_y->Write();
+  ECalHits_y->GetXaxis()->SetTitle("[m]");
   ECalHits_z->Write();
+  ECalHits_z->GetXaxis()->SetTitle("[m]");
 
+  HCalHits_energy->Write();
+  HCalHits_energy->GetXaxis()->SetTitle("[GeV]");
   HCalHits_eta->Write();
   HCalHits_phi->Write();
+  HCalHits_2DEtaPhi->Write();
+  HCalHits_2DEtaPhi->GetXaxis()->SetTitle("[#eta]");
+  HCalHits_2DEtaPhi->GetYaxis()->SetTitle("[#phi]");
   HCalHits_x->Write();
+  HCalHits_x->GetXaxis()->SetTitle("[m]");
   HCalHits_y->Write();
+  HCalHits_y->GetXaxis()->SetTitle("[m]");
   HCalHits_z->Write();
+  HCalHits_z->GetXaxis()->SetTitle("[m]");
 
   RHadron1_px->Write();
   RHadron1_py->Write();
@@ -925,9 +949,6 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
    edm::ESHandle<CaloGeometry> caloGeometry;
    iSetup.get<CaloGeometryRecord>().get(caloGeometry); 
 
-   //edm::ESHandle<HcalGeometry> HcalGeometry;
-   //iSetup.get<HcalGeometryRecord>().get(HcalGeometry); 
-
    // Find R-hadrons
    const reco::GenParticle *genrhad1=0;
    const reco::GenParticle *genrhad2=0;
@@ -1034,9 +1055,13 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     DetId detid = DetId(caloHit->id());
     GlobalPoint gpos = caloGeometry->getPosition(detid);
 
+    // Fill calohit energy histogram
+    ECalHits_energy->Fill(caloHit->energy());
+
     // Fill calohit location histograms
     ECalHits_eta->Fill(gpos.eta());
     ECalHits_phi->Fill(gpos.phi());
+    ECalHits_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
     ECalHits_x->Fill(gpos.x());
     ECalHits_y->Fill(gpos.y());
     ECalHits_z->Fill(gpos.z());
@@ -1047,9 +1072,13 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     DetId detid = DetId(caloHit->id());
     GlobalPoint gpos = caloGeometry->getPosition(detid);
 
+    // Fill calohit energy histogram
+    ECalHits_energy->Fill(caloHit->energy());
+
     // Fill calohit location histograms
     ECalHits_eta->Fill(gpos.eta());
     ECalHits_phi->Fill(gpos.phi());
+    ECalHits_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
     ECalHits_x->Fill(gpos.x());
     ECalHits_y->Fill(gpos.y());
     ECalHits_z->Fill(gpos.z());
@@ -1060,25 +1089,31 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     DetId detid = DetId(caloHit->id());
     GlobalPoint gpos = caloGeometry->getPosition(detid);
 
+    // Fill calohit energy histogram
+    ECalHits_energy->Fill(caloHit->energy());
+
     // Fill calohit location histograms
     ECalHits_eta->Fill(gpos.eta());
     ECalHits_phi->Fill(gpos.phi());
+    ECalHits_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
     ECalHits_x->Fill(gpos.x());
     ECalHits_y->Fill(gpos.y());
     ECalHits_z->Fill(gpos.z());
   }
 
+  
   // Grab calorimiter hits in HCal
   for (caloHit = HcalContainer->begin(); caloHit != HcalContainer->end(); ++caloHit) {
     DetId detid = DetId(caloHit->id());
+    std::cout << "Got id" << std::endl;
     GlobalPoint gpos = caloGeometry->getPosition(detid);
-
+    std::cout << gpos.x() << std::endl;
     // Fill calohit location histograms
-    HCalHits_eta->Fill(gpos.eta());
-    HCalHits_phi->Fill(gpos.phi());
-    HCalHits_x->Fill(gpos.x());
-    HCalHits_y->Fill(gpos.y());
-    HCalHits_z->Fill(gpos.z());
+    //HCalHits_eta->Fill(gpos.eta());
+    //HCalHits_phi->Fill(gpos.phi());
+    //HCalHits_x->Fill(gpos.x());
+    //HCalHits_y->Fill(gpos.y());
+    //HCalHits_z->Fill(gpos.z());
   }
 }
 
