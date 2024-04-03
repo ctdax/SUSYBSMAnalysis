@@ -305,11 +305,13 @@ private:
   TH1F *RHadron1_px;
   TH1F *RHadron1_py;
   TH1F *RHadron1_pz;
+  TH2F *RHadron1_pxpy;
   TH1F *RHadron2_pdgId;
   TH1F *RHadron2_mass;
   TH1F *RHadron2_px;
   TH1F *RHadron2_py;
   TH1F *RHadron2_pz;
+  TH2F *RHadron2_pxpy;
 
 };
 
@@ -747,6 +749,9 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
   RHadron1_py->GetXaxis()->SetTitle("[GeV]");
   RHadron1_pz = new TH1F("RHadron1_pz","RHadron1_pz",100,-10000.,10000.);
   RHadron1_pz->GetXaxis()->SetTitle("[GeV]");
+  RHadron1_pxpy = new TH2F("RHadron1_pxpy","RHadron1_pxpy",100,-10000.,10000.,100,-10000.,10000.);
+  RHadron1_pxpy->GetXaxis()->SetTitle("[GeV]");
+  RHadron1_pxpy->GetYaxis()->SetTitle("[GeV]");
 
   RHadron2_pdgId = new TH1F("RHadron2_pdgId", "RHadron2_pdgId", 100, 1000599., 1100000.);
   RHadron2_mass = new TH1F("RHadron2_mass", "RHadron2_mass", 100, 0., 3000.);
@@ -757,6 +762,9 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
   RHadron2_py->GetXaxis()->SetTitle("[GeV]");
   RHadron2_pz = new TH1F("RHadron2_pz","RHadron2_pz",100,-10000.,10000.);
   RHadron2_pz->GetXaxis()->SetTitle("[GeV]");
+  RHadron2_pxpy = new TH2F("RHadron2_pxpy","RHadron2_pxpy",100,-10000.,10000.,100,-10000.,10000.);
+  RHadron2_pxpy->GetXaxis()->SetTitle("[GeV]");
+  RHadron2_pxpy->GetYaxis()->SetTitle("[GeV]");
   
   evtcount = 0;
   evtcount00 = 0;
@@ -807,12 +815,14 @@ SimCaloHitAnalyzer::~SimCaloHitAnalyzer() {
   RHadron1_px->Write();
   RHadron1_py->Write();
   RHadron1_pz->Write();
+  RHadron1_pxpy->Write();
 
   RHadron2_pdgId->Write();
   RHadron2_mass->Write();
   RHadron2_px->Write();
   RHadron2_py->Write();
   RHadron2_pz->Write();
+  RHadron2_pxpy->Write();
 
   std::cout << "saving MET trigger histograms..." << std::endl;
   outputFile_->Write();
@@ -1023,12 +1033,14 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
   RHadron1_px->Fill(genrhad1->p4().px());
   RHadron1_py->Fill(genrhad1->p4().py());
   RHadron1_pz->Fill(genrhad1->p4().pz());
+  RHadron1_pxpy->Fill(genrhad1->p4().px(),genrhad1->p4().py());
 
   RHadron2_pdgId->Fill(genrhad2->pdgId());
   RHadron2_mass->Fill(genrhad2->mass());
   RHadron2_px->Fill(genrhad2->p4().px());
   RHadron2_py->Fill(genrhad2->p4().py());
   RHadron2_pz->Fill(genrhad2->p4().pz());
+  RHadron2_pxpy->Fill(genrhad2->p4().px(),genrhad2->p4().py());
 
   //Check the tracker for R-hadron hits
   edm::PSimHitContainer::const_iterator itHit;
@@ -1108,8 +1120,9 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     ECalHits_z->Fill(gpos.z());
     ECalHits_2DXY->Fill(gpos.x(),gpos.y());
 
-    if ((caloHit->energy()>170.)&&(caloHit->energy()<190.)) {
-      std::cout << "EB caloHit Energy = " << caloHit->energy() << std::endl;
+    if (caloHit->energy()>=1000.) {
+      Strange_ECalHits_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
+      Strange_ECalHits_2DXY->Fill(gpos.x(),gpos.y());
     }
   }
   
@@ -1129,6 +1142,11 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     ECalHits_y->Fill(gpos.y());
     ECalHits_z->Fill(gpos.z());
     ECalHits_2DXY->Fill(gpos.x(),gpos.y());
+
+    if (caloHit->energy()>=1000.) {
+      Strange_ECalHits_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
+      Strange_ECalHits_2DXY->Fill(gpos.x(),gpos.y());
+    }
   }
   
   // Grab calorimiter hits in EE
@@ -1147,6 +1165,11 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     ECalHits_y->Fill(gpos.y());
     ECalHits_z->Fill(gpos.z());
     ECalHits_2DXY->Fill(gpos.x(),gpos.y());
+
+    if (caloHit->energy()>=1000.) {
+      Strange_ECalHits_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
+      Strange_ECalHits_2DXY->Fill(gpos.x(),gpos.y());
+    }
   }
 
   /*
