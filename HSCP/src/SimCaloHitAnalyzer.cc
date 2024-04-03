@@ -287,9 +287,9 @@ private:
   TH1F *ECalHits_eta;
   TH1F *ECalHits_phi;
   TH2F *ECalHits_2DEtaPhi;
-  TH2F *Strange_ECalHits_2DEtaPhi;
+  TH2F *ECalHits1000_2DEtaPhi;
   TH2F *ECalHits_2DXY;
-  TH2F *Strange_ECalHits_2DXY;
+  TH2F *ECalHits1000_2DXY;
   TH1F *ECalHits_x;
   TH1F *ECalHits_y;
   TH1F *ECalHits_z;
@@ -710,15 +710,15 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
   ECalHits_2DEtaPhi = new TH2F("ECalHits_2DEtaPhi","ECalHits_2DEtaPhi",50,-4.,4.,50,-3.5,3.5);
   ECalHits_2DEtaPhi->GetXaxis()->SetTitle("#eta");
   ECalHits_2DEtaPhi->GetYaxis()->SetTitle("#phi");
-  Strange_ECalHits_2DEtaPhi = new TH2F("Strange_ECalHits_2DEtaPhi","Strange_ECalHits_2DEtaPhi",50,-4.,4.,50,-3.5,3.5);
-  Strange_ECalHits_2DEtaPhi->GetXaxis()->SetTitle("#eta");
-  Strange_ECalHits_2DEtaPhi->GetYaxis()->SetTitle("#phi");
+  ECalHits1000_2DEtaPhi = new TH2F("ECalHits > 1000GeV #eta #phi","ECalHits > 1000GeV #eta #phi",50,-4.,4.,50,-3.5,3.5);
+  ECalHits1000_2DEtaPhi->GetXaxis()->SetTitle("#eta");
+  ECalHits1000_2DEtaPhi->GetYaxis()->SetTitle("#phi");
   ECalHits_2DXY = new TH2F("ECalHits_2DXY","ECalHits_2DXY",50,-200.,200.,50,-200.,200.);
   ECalHits_2DXY->GetXaxis()->SetTitle("[cm]");
   ECalHits_2DXY->GetYaxis()->SetTitle("[cm]");
-  Strange_ECalHits_2DXY = new TH2F("Strange_ECalHits_2DXY","Strange_ECalHits_2DXY",50,-200.,200.,50,-200.,200.);
-  Strange_ECalHits_2DXY->GetXaxis()->SetTitle("[cm]");
-  Strange_ECalHits_2DXY->GetYaxis()->SetTitle("[cm]");
+  ECalHits1000_2DXY = new TH2F("ECalHits > 1000GeV XY","ECalHits > 1000GeV XY",50,-200.,200.,50,-200.,200.);
+  ECalHits1000_2DXY->GetXaxis()->SetTitle("[cm]");
+  ECalHits1000_2DXY->GetYaxis()->SetTitle("[cm]");
   ECalHits_x = new TH1F("ECalHits_x","ECalHits_x",50,-200.,200.);
   ECalHits_x->GetXaxis()->SetTitle("[cm]");
   ECalHits_y = new TH1F("ECalHits_y","ECalHits_y",50,-200.,200.);
@@ -749,7 +749,7 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
   RHadron1_py->GetXaxis()->SetTitle("[GeV]");
   RHadron1_pz = new TH1F("RHadron1_pz","RHadron1_pz",100,-10000.,10000.);
   RHadron1_pz->GetXaxis()->SetTitle("[GeV]");
-  RHadron1_pxpy = new TH2F("RHadron1_pxpy","RHadron1_pxpy",100,-10000.,10000.,100,-10000.,10000.);
+  RHadron1_pxpy = new TH2F("RHadron1_pxpy","RHadron1_pxpy",100,-3000.,3000.,100,-3000.,3000.);
   RHadron1_pxpy->GetXaxis()->SetTitle("[GeV]");
   RHadron1_pxpy->GetYaxis()->SetTitle("[GeV]");
 
@@ -762,7 +762,7 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
   RHadron2_py->GetXaxis()->SetTitle("[GeV]");
   RHadron2_pz = new TH1F("RHadron2_pz","RHadron2_pz",100,-10000.,10000.);
   RHadron2_pz->GetXaxis()->SetTitle("[GeV]");
-  RHadron2_pxpy = new TH2F("RHadron2_pxpy","RHadron2_pxpy",100,-10000.,10000.,100,-10000.,10000.);
+  RHadron2_pxpy = new TH2F("RHadron2_pxpy","RHadron2_pxpy",100,-3000.,3000.,100,-3000.,3000.);
   RHadron2_pxpy->GetXaxis()->SetTitle("[GeV]");
   RHadron2_pxpy->GetYaxis()->SetTitle("[GeV]");
   
@@ -795,9 +795,9 @@ SimCaloHitAnalyzer::~SimCaloHitAnalyzer() {
   ECalHits_eta->Write();
   ECalHits_phi->Write();
   ECalHits_2DEtaPhi->Write();
-  Strange_ECalHits_2DEtaPhi->Write();
+  ECalHits1000_2DEtaPhi->Write();
   ECalHits_2DXY->Write(); 
-  Strange_ECalHits_2DXY->Write();
+  ECalHits1000_2DXY->Write();
   ECalHits_x->Write();
   ECalHits_y->Write();
   ECalHits_z->Write();
@@ -1121,8 +1121,8 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     ECalHits_2DXY->Fill(gpos.x(),gpos.y());
 
     if (caloHit->energy()>=1000.) {
-      Strange_ECalHits_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
-      Strange_ECalHits_2DXY->Fill(gpos.x(),gpos.y());
+      ECalHits1000_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
+      ECalHits1000_2DXY->Fill(gpos.x(),gpos.y());
     }
   }
   
@@ -1144,8 +1144,8 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     ECalHits_2DXY->Fill(gpos.x(),gpos.y());
 
     if (caloHit->energy()>=1000.) {
-      Strange_ECalHits_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
-      Strange_ECalHits_2DXY->Fill(gpos.x(),gpos.y());
+      ECalHits1000_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
+      ECalHits1000_2DXY->Fill(gpos.x(),gpos.y());
     }
   }
   
@@ -1167,8 +1167,8 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     ECalHits_2DXY->Fill(gpos.x(),gpos.y());
 
     if (caloHit->energy()>=1000.) {
-      Strange_ECalHits_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
-      Strange_ECalHits_2DXY->Fill(gpos.x(),gpos.y());
+      ECalHits1000_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
+      ECalHits1000_2DXY->Fill(gpos.x(),gpos.y());
     }
   }
 
