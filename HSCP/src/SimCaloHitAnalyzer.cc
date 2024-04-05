@@ -20,6 +20,8 @@
 //System include files
 #include <memory>
 #include <cmath>
+#include <iostream>
+#include <fstream>
 
 //Triggers and Handles
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -282,6 +284,7 @@ private:
   float dEdxSF_0_, dEdxSF_1_;
   float dEdxSF[2] = {dEdxSF_0_, dEdxSF_1_};
 
+  std::ofstream csv;
   TFile *outputFile_;
   TH1F *ECalHits_energy;
   TH1F *ECalHits_eta;
@@ -702,6 +705,10 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
   // Output File
   outputFile_ = new TFile("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/SUSYBSMAnalysis/HSCP/test/RHadronP_SimCaloHitPos_EXO-RunIISummer20UL18GENSIM-00010-v3.root", "RECREATE");  
 
+  // Create csv for energy spike R-hadron analysis
+  csv.open ("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/SUSYBSMAnalysis/HSCP/test/CaloHitEnergySpikes.csv");
+  csv << "Event,Rhad1_px [GeV],Rhad1_py [GeV],Rhad2_px [GeV],Rhad2_py [GeV],Calohit X [cm],Calohit Y [cm],Calohit Energy [GeV]\n";
+
   // Declare ROOT histograms
   ECalHits_energy = new TH1F("ECalHits_energy","ECalHits_energy",100,0.,8000.);
   ECalHits_energy->GetXaxis()->SetTitle("[GeV]");
@@ -827,6 +834,7 @@ SimCaloHitAnalyzer::~SimCaloHitAnalyzer() {
   std::cout << "saving MET trigger histograms..." << std::endl;
   outputFile_->Write();
   outputFile_->Close();
+  csv.close();
 }
 
 void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
@@ -1124,6 +1132,9 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
       ECalHits1000_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
       ECalHits1000_2DXY->Fill(gpos.x(),gpos.y());
     }
+
+    // Fill csv for energy spike R-hadron analysis
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << gpos.x() << "," << gpos.y() << "," << caloHit->energy() << "\n";
   }
   
   // Grab calorimiter hits in ES
@@ -1147,6 +1158,9 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
       ECalHits1000_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
       ECalHits1000_2DXY->Fill(gpos.x(),gpos.y());
     }
+
+    // Fill csv for energy spike R-hadron analysis
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << gpos.x() << "," << gpos.y() << "," << caloHit->energy() << "\n";
   }
   
   // Grab calorimiter hits in EE
@@ -1170,13 +1184,16 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
       ECalHits1000_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
       ECalHits1000_2DXY->Fill(gpos.x(),gpos.y());
     }
+
+    // Fill csv for energy spike R-hadron analysis
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << gpos.x() << "," << gpos.y() << "," << caloHit->energy() << "\n";
   }
 
   /*
   // Grab calorimiter hits in HCal
   for (caloHit = HcalContainer->begin(); caloHit != HcalContainer->end(); ++caloHit) {
     DetId detid = DetId(caloHit->id());
-    std::cout << "Hcal detID = " << caloHit->id() << std::endl;
+    std::cout << "Hcal detID = " << caloHit->id() << std::en`dl;
     std::cout << "Hcal subdetID = " << detid.subdetId() << std::endl;
     GlobalPoint gpos = caloGeometry->getPosition(detid);
     std::cout << "Hcal global x position = " << gpos.x() << std::endl;
