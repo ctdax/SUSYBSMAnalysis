@@ -292,7 +292,9 @@ private:
   TH2F *ECalHits_2DEtaPhi;
   TH2F *ECalHits1000_2DEtaPhi;
   TH2F *ECalHits_2DXY;
+  TH2F *EBHits_RZ;
   TH2F *ECalHits1000_2DXY;
+  TH2F *EBHits1000_RZ;
   TH1F *ECalHits_x;
   TH1F *ECalHits_y;
   TH1F *ECalHits_z;
@@ -706,7 +708,7 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
   outputFile_ = new TFile("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/SUSYBSMAnalysis/HSCP/test/RHadronP_SimCaloHitPos_EXO-RunIISummer20UL18GENSIM-00010-v3.root", "RECREATE");  
 
   // Create csv for energy spike R-hadron analysis
-  csv.open ("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/SUSYBSMAnalysis/HSCP/test/CaloHitEnergySpikes.csv");
+  csv.open ("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/SUSYBSMAnalysis/HSCP/test/CaloHitEnergySpikes_gluino1800GeV.csv");
   csv << "Event,Rhad1_px [GeV],Rhad1_py [GeV],Rhad2_px [GeV],Rhad2_py [GeV],Calohit X [cm],Calohit Y [cm],Calohit Energy [GeV]\n";
 
   // Declare ROOT histograms
@@ -723,9 +725,15 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
   ECalHits_2DXY = new TH2F("ECalHits_2DXY","ECalHits_2DXY",50,-200.,200.,50,-200.,200.);
   ECalHits_2DXY->GetXaxis()->SetTitle("[cm]");
   ECalHits_2DXY->GetYaxis()->SetTitle("[cm]");
+  EBHits_RZ = new TH2F("EBHits RZ","EBHits RZ",100,-300.,300.,20,129.,131.);
+  EBHits_RZ->GetYaxis()->SetTitle("R [cm]");
+  EBHits_RZ->GetXaxis()->SetTitle("Z [cm]");
   ECalHits1000_2DXY = new TH2F("ECalHits > 1000GeV XY","ECalHits > 1000GeV XY",50,-200.,200.,50,-200.,200.);
   ECalHits1000_2DXY->GetXaxis()->SetTitle("[cm]");
   ECalHits1000_2DXY->GetYaxis()->SetTitle("[cm]");
+  EBHits1000_RZ = new TH2F("EBHits > 1000GeV RZ","EBHits > 1000GeV RZ",100,-300.,300.,20,129.,131.);
+  EBHits1000_RZ->GetYaxis()->SetTitle("R [cm]");
+  EBHits1000_RZ->GetXaxis()->SetTitle("Z [cm]");
   ECalHits_x = new TH1F("ECalHits_x","ECalHits_x",50,-200.,200.);
   ECalHits_x->GetXaxis()->SetTitle("[cm]");
   ECalHits_y = new TH1F("ECalHits_y","ECalHits_y",50,-200.,200.);
@@ -805,6 +813,8 @@ SimCaloHitAnalyzer::~SimCaloHitAnalyzer() {
   ECalHits1000_2DEtaPhi->Write();
   ECalHits_2DXY->Write(); 
   ECalHits1000_2DXY->Write();
+  EBHits_RZ->Write();
+  EBHits1000_RZ->Write();
   ECalHits_x->Write();
   ECalHits_y->Write();
   ECalHits_z->Write();
@@ -1128,9 +1138,13 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     ECalHits_z->Fill(gpos.z());
     ECalHits_2DXY->Fill(gpos.x(),gpos.y());
 
+    //Fill EB specific histograms
+    EBHits_RZ->Fill(gpos.z(),sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()));
+
     if (caloHit->energy()>=1000.) {
       ECalHits1000_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
       ECalHits1000_2DXY->Fill(gpos.x(),gpos.y());
+      EBHits1000_RZ->Fill(gpos.z(),sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()));
     }
 
     // Fill csv for energy spike R-hadron analysis

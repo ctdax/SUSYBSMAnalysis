@@ -1,4 +1,5 @@
 import FWCore.ParameterSet.Config as cms
+from FWCore.ParameterSet.VarParsing import VarParsing
 
 process = cms.Process("Demo")
 
@@ -18,7 +19,9 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
         ### Currently a ROOT file that contains gluinos, given by Todd
+        #'file:/uscms_data/d2/tadams/hscp/fall22a/CMSSW_10_6_30/src/EXO-RunIISummer20UL18GENSIM-00038-stop.root'
         'file:/uscms_data/d2/tadams/hscp/fall22a/CMSSW_10_6_30/src/EXO-RunIISummer20UL18GENSIM-00010-v3.root'
+        #'file:/uscms_data/d2/tadams/hscp/fall22a/CMSSW_10_6_30/src/EXO-RunIISummer20UL18GENSIM-00073-stau.root'
     )
 )
 
