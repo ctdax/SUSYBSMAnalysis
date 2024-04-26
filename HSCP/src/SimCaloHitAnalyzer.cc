@@ -39,9 +39,14 @@
 
 //Tracker
 #include "SimDataFormats/Track/interface/SimTrackContainer.h"
+#include "SimDataFormats/Vertex/interface/SimVertexContainer.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
 #include "Geometry/TrackerGeometryBuilder/interface/TrackerGeometry.h"
+#include "SimDataFormats/Track/interface/CoreSimTrack.h"
+#include "SimDataFormats/Track/interface/SimTrack.h"
+#include "SimDataFormats/Vertex/interface/SimVertex.h"
+#include "SimDataFormats/Vertex/interface/CoreSimVertex.h"
 
 //Calorimiter
 #include "SimDataFormats/CaloHit/interface/PCaloHit.h"
@@ -219,6 +224,8 @@ private:
   const edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> tGeomEsToken_;
 
   // Tracker hits
+  edm::EDGetTokenT<edm::SimTrackContainer> edmSimTrackContainerToken_;
+  //edm::EDGetTokenT<edm::SimVertexContainer> edmSimVertexContainerToken_;
   edm::EDGetTokenT<edm::PSimHitContainer> edmPSimHitContainer_siTIBLow_Token_;
   edm::EDGetTokenT<edm::PSimHitContainer> edmPSimHitContainer_siTIBHigh_Token_;
   edm::EDGetTokenT<edm::PSimHitContainer> edmPSimHitContainer_siTOBLow_Token_;
@@ -244,7 +251,6 @@ private:
   edm::EDGetTokenT <edm::PSimHitContainer> edmPSimHitContainer_muonDT_Token_;
 
   // Miscellaneous
-  edm::EDGetTokenT<edm::SimTrackContainer> edmSimTrackContainerToken_;
   edm::EDGetTokenT<edm::TriggerResults> triggerBits_;
   edm::EDGetTokenT<trigger::TriggerEvent> triggerSummary_;
   edm::EDGetTokenT<std::vector<reco::PFMET>> pfmet_;
@@ -317,6 +323,7 @@ private:
   TH1F *RHadron2_py;
   TH1F *RHadron2_pz;
   TH2F *RHadron2_pxpy;
+  TH1F *RHadron_ECalSubDetector;
 
 };
 
@@ -651,6 +658,8 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
 
 {
   // Tracker
+  edmSimTrackContainerToken_ = consumes<edm::SimTrackContainer>(iConfig.getParameter<edm::InputTag>("G4TrkSrc"));
+  //edmSimVertexContainerToken_ = consumes<edm::SimVertexContainer>(iConfig.getParameter<edm::InputTag>("G4VtxSrc"));
   edmPSimHitContainer_siTIBLow_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("TrackerHitsTIBLowTof"));
   edmPSimHitContainer_siTIBHigh_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("TrackerHitsTIBHighTof"));
   edmPSimHitContainer_siTOBLow_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("TrackerHitsTOBLowTof"));
@@ -675,7 +684,6 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
   edmPSimHitContainer_muonDT_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("MuonDTHits"));
 
   // Miscellaneous
-  edmSimTrackContainerToken_ = consumes<edm::SimTrackContainer>(iConfig.getParameter<edm::InputTag>("G4TrkSrc"));
   triggerBits_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("bits"));
   triggerSummary_ = consumes<trigger::TriggerEvent>(iConfig.getParameter<edm::InputTag>("trig_sum"));
   pfmet_ = consumes<std::vector<reco::PFMET>>(iConfig.getParameter<edm::InputTag>("pfmet_reco"));
@@ -709,7 +717,7 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
 
   // Create csv for energy spike R-hadron analysis
   csv.open ("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/SUSYBSMAnalysis/HSCP/test/CaloHitEnergySpikes_gluino1800GeV.csv");
-  csv << "Event,Rhad1_px [GeV],Rhad1_py [GeV],Rhad2_px [GeV],Rhad2_py [GeV],Calohit X [cm],Calohit Y [cm],Calohit Energy [GeV]\n";
+  csv << "Event,Rhad1_px [GeV],Rhad1_py [GeV],Rhad2_px [GeV],Rhad2_py [GeV],ECal Type,Calohit X [cm],Calohit Y [cm],Calohit Z [cm],Calohit R [cm],Calohit Energy [GeV]\n";
 
   // Declare ROOT histograms
   ECalHits_energy = new TH1F("ECalHits_energy","ECalHits_energy",100,0.,8000.);
@@ -780,6 +788,10 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
   RHadron2_pxpy = new TH2F("RHadron2_pxpy","RHadron2_pxpy",100,-3000.,3000.,100,-3000.,3000.);
   RHadron2_pxpy->GetXaxis()->SetTitle("[GeV]");
   RHadron2_pxpy->GetYaxis()->SetTitle("[GeV]");
+
+  RHadron_ECalSubDetector = new TH1F("RHadron_ECalSubDetector","RHadron_ECalSubDetector",2,0.,2.);
+  RHadron_ECalSubDetector->GetXaxis()->SetBinLabel(1,"Barrel");
+  RHadron_ECalSubDetector->GetXaxis()->SetBinLabel(2,"Endcap");
   
   evtcount = 0;
   evtcount00 = 0;
@@ -840,6 +852,8 @@ SimCaloHitAnalyzer::~SimCaloHitAnalyzer() {
   RHadron2_py->Write();
   RHadron2_pz->Write();
   RHadron2_pxpy->Write();
+
+  RHadron_ECalSubDetector->Write();
 
   std::cout << "saving MET trigger histograms..." << std::endl;
   outputFile_->Write();
@@ -1006,6 +1020,22 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
         return;
    }
 
+    // Get G4SimTracks
+    edm::Handle<edm::SimTrackContainer> G4TrkContainer;
+    iEvent.getByToken(edmSimTrackContainerToken_, G4TrkContainer);
+    if (!G4TrkContainer.isValid()) {
+      edm::LogError("TrackerHitAnalyzer::analyze") << "Unable to find SimTrack in event!";
+      return;
+   }
+
+    // Get G4SimVertices
+    //edm::Handle<edm::SimVertexContainer> G4VtxContainer;
+    //iEvent.getByToken(edmSimVertexContainerToken_, G4VtxContainer);
+    //if (!G4VtxContainer.isValid()) {
+    //  edm::LogError("TrackerHitAnalyzer::analyze") << "Unable to find SimVertex in event!";
+    //  return;
+    //}
+
    // Import tracker and calorimiter geometry
    edm::ESHandle<TrackerGeometry> tkGeometry;
    iSetup.get<TrackerDigiGeometryRecord>().get(tkGeometry);
@@ -1059,6 +1089,20 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
   RHadron2_py->Fill(genrhad2->p4().py());
   RHadron2_pz->Fill(genrhad2->p4().pz());
   RHadron2_pxpy->Fill(genrhad2->p4().px(),genrhad2->p4().py());
+
+  //Plot which subdetector the R-hadrons hit in the ECAL based on eta
+  if (abs(genrhad1->eta())<1.479) {
+    RHadron_ECalSubDetector->Fill(0);
+  } else if ((abs(genrhad1->eta())>=1.479)&&(abs(genrhad1->eta())<3.0)) {
+    RHadron_ECalSubDetector->Fill(1.5);
+  }
+
+  if (abs(genrhad2->eta())<1.479) {
+    RHadron_ECalSubDetector->Fill(0);
+  } else if ((abs(genrhad2->eta())>=1.479)&&(abs(genrhad2->eta())<3.0)) {
+    RHadron_ECalSubDetector->Fill(1.5);
+  }
+
 
   //Check the tracker for R-hadron hits
   edm::PSimHitContainer::const_iterator itHit;
@@ -1126,6 +1170,31 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     DetId detid = DetId(caloHit->id());
     GlobalPoint gpos = caloGeometry->getPosition(detid);
 
+    //Get the simulated vertices
+    //WARNING: PROBABLY VERY WRONG, COMMENT THIS OUT AND UNCOMMENT THE gpos ABOVE IF YOU WANT THINGS TO WORK FOR A CALOHIT POSITION//
+    /*
+    GlobalPoint gpos = GlobalPoint();
+    unsigned trackId = caloHit->geantTrackId();
+    edm::SimTrackContainer::const_iterator simTrack;
+    for (simTrack = G4TrkContainer->begin(); simTrack != G4TrkContainer->end(); ++simTrack) {
+      if (simTrack->trackId() == trackId) {
+        unsigned vertexId = simTrack->vertIndex();
+        edm::SimVertexContainer::const_iterator simVertex;
+        for (simVertex = G4VtxContainer->begin(); simVertex != G4VtxContainer->end(); ++simVertex) {
+          if (simVertex->vertexId() == vertexId) {
+            gpos = GlobalPoint(simVertex->position().x(),simVertex->position().y(),simVertex->position().z());
+          }
+        }
+      }
+    }
+
+    //CoreSimTrack simTrack = SimTrack();
+    //int simVertexId = simTrack->vertIndex();
+    //CoreSimVertex simVertex = SimVertex(simVertexId);
+    //GlobalPoint gpos = simVertex.position();
+    //END OF WARNING//
+    */
+
     // Fill calohit energy histogram
     ECalHits_energy->Fill(caloHit->energy());
 
@@ -1138,17 +1207,19 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     ECalHits_z->Fill(gpos.z());
     ECalHits_2DXY->Fill(gpos.x(),gpos.y());
 
-    //Fill EB specific histograms
-    EBHits_RZ->Fill(gpos.z(),sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()));
-
+    //Fill histograms after energy cut
     if (caloHit->energy()>=1000.) {
       ECalHits1000_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
       ECalHits1000_2DXY->Fill(gpos.x(),gpos.y());
       EBHits1000_RZ->Fill(gpos.z(),sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()));
     }
 
+
+    //Fill EB specific histograms
+    EBHits_RZ->Fill(gpos.z(),sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()));
+
     // Fill csv for energy spike R-hadron analysis
-    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << gpos.x() << "," << gpos.y() << "," << caloHit->energy() << "\n";
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << "EB" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << caloHit->energy() << "\n";
   }
   
   // Grab calorimiter hits in ES
@@ -1168,13 +1239,14 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     ECalHits_z->Fill(gpos.z());
     ECalHits_2DXY->Fill(gpos.x(),gpos.y());
 
+    //Fill histograms after energy cut
     if (caloHit->energy()>=1000.) {
       ECalHits1000_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
       ECalHits1000_2DXY->Fill(gpos.x(),gpos.y());
     }
 
     // Fill csv for energy spike R-hadron analysis
-    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << gpos.x() << "," << gpos.y() << "," << caloHit->energy() << "\n";
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << "ES" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << caloHit->energy() << "\n";
   }
   
   // Grab calorimiter hits in EE
@@ -1194,13 +1266,14 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     ECalHits_z->Fill(gpos.z());
     ECalHits_2DXY->Fill(gpos.x(),gpos.y());
 
+    //Fill histograms after energy cut
     if (caloHit->energy()>=1000.) {
       ECalHits1000_2DEtaPhi->Fill(gpos.eta(),gpos.phi());
       ECalHits1000_2DXY->Fill(gpos.x(),gpos.y());
     }
 
     // Fill csv for energy spike R-hadron analysis
-    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << gpos.x() << "," << gpos.y() << "," << caloHit->energy() << "\n";
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << "EE" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << caloHit->energy() << "\n";
   }
 
   /*
