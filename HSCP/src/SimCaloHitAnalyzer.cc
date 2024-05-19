@@ -48,15 +48,25 @@
 #include "SimDataFormats/Vertex/interface/SimVertex.h"
 #include "SimDataFormats/Vertex/interface/CoreSimVertex.h"
 
-//Calorimiter
+//ECAL
 #include "SimDataFormats/CaloHit/interface/PCaloHit.h"
 #include "SimDataFormats/CaloHit/interface/PCaloHitContainer.h"
 #include "DataFormats/EcalDetId/interface/EBDetId.h"
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
+
+//HCAL
 #include "Geometry/Records/interface/HcalGeometryRecord.h"
 #include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
+#include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
+#include "Geometry/Records/interface/CaloTopologyRecord.h"
+#include "Geometry/CaloTopology/interface/CaloSubdetectorTopology.h"
+#include "Geometry/CaloTopology/interface/HcalTopology.h"
+#include "Geometry/CaloTopology/interface/CaloTopology.h"
+#include "Geometry/HcalCommonData/interface/HcalDDDRecConstants.h"
+#include "Geometry/HcalCommonData/interface/HcalHitRelabeller.h"
+#include "Geometry/Records/interface/HcalRecNumberingRecord.h"
 
 //Muon Chamber
 #include "Geometry/Records/interface/MuonGeometryRecord.h"
@@ -66,6 +76,8 @@
 #include "Geometry/DTGeometry/interface/DTChamber.h"
 #include "Geometry/DTGeometry/interface/DTSuperLayer.h"
 #include "Geometry/CSCGeometry/interface/CSCGeometry.h"
+#include "Geometry/GEMGeometry/interface/GEMGeometry.h"
+#include "Geometry/RPCGeometry/interface/RPCGeometry.h"
 
 //Calculations
 #include "DataFormats/Common/interface/HLTPathStatus.h"
@@ -239,16 +251,32 @@ private:
   edm::EDGetTokenT <edm::PSimHitContainer> edmPSimHitContainer_pxlFwdLow_Token_;
   edm::EDGetTokenT <edm::PSimHitContainer> edmPSimHitContainer_pxlFwdHigh_Token_;
 
-  // Calorimiter hits
+  // ECAL hits
   edm::EDGetTokenT <edm::PCaloHitContainer> edmCaloHitContainer_EcalHitsEB_Token_;
   edm::EDGetTokenT <edm::PCaloHitContainer> edmCaloHitContainer_EcalHitsEE_Token_;
   edm::EDGetTokenT <edm::PCaloHitContainer> edmCaloHitContainer_EcalHitsES_Token_;
+
+  // HCAL hits
+  const HcalDDDRecConstants *hcons_         ;
+  const CaloGeometry        *geometry_      ;
+  const CaloTopology        *topology_      ;
+  const HcalTopology        *hcalTopology_  ;
+  const HcalRespCorrs       *respCorrs_     ;
+  HcalRespCorrs             *respCorrs      ;
+
+  const edm::ESGetToken< HcalDDDRecConstants, HcalRecNumberingRecord > tok_HRNDC_        ;
+  const edm::ESGetToken< CaloGeometry,        CaloGeometryRecord     > tok_geom_         ;
+  const edm::ESGetToken< CaloTopology,        CaloTopologyRecord     > tok_caloTopology_ ;
+  const edm::ESGetToken< HcalTopology,        HcalRecNumberingRecord > tok_hcalTopology_ ;
+  const edm::ESGetToken< HcalRespCorrs,       HcalRespCorrsRcd       > tok_resp_         ;
   edm::EDGetTokenT <edm::PCaloHitContainer> edmCaloHitContainer_HcalHits_Token_;
 
 
   // Muon hits
   edm::EDGetTokenT <edm::PSimHitContainer> edmPSimHitContainer_muonCSC_Token_;
   edm::EDGetTokenT <edm::PSimHitContainer> edmPSimHitContainer_muonDT_Token_;
+  edm::EDGetTokenT <edm::PSimHitContainer> edmPSimHitContainer_muonRPC_Token_;
+  edm::EDGetTokenT <edm::PSimHitContainer> edmPSimHitContainer_muonGEM_Token_;
 
   // Miscellaneous
   edm::EDGetTokenT<edm::TriggerResults> triggerBits_;
@@ -682,6 +710,8 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
   // Muon Chamber
   edmPSimHitContainer_muonCSC_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("MuonCSCHits"));
   edmPSimHitContainer_muonDT_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("MuonDTHits"));
+  edmPSimHitContainer_muonRPC_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("MuonRPCHits"));
+  edmPSimHitContainer_muonGEM_Token_ = consumes<edm::PSimHitContainer>(iConfig.getParameter<edm::InputTag>("MuonGEMHits"));
 
   // Miscellaneous
   triggerBits_ = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("bits"));
@@ -713,11 +743,11 @@ SimCaloHitAnalyzer::SimCaloHitAnalyzer(const edm::ParameterSet& iConfig)
 
 
   // Output File
-  outputFile_ = new TFile("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/SUSYBSMAnalysis/HSCP/test/RHadronP_SimCaloHitPos_EXO-RunIISummer20UL18GENSIM-00010-v3.root", "RECREATE");  
+  outputFile_ = new TFile("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/SUSYBSMAnalysis/HSCP/test/Gluinos_SimCaloHitPos_EXO-RunIISummer20UL18GENSIM-00010-v3.root", "RECREATE");  
 
   // Create csv for energy spike R-hadron analysis
   csv.open ("/uscms/home/cthompso/nobackup/CMSSW_10_6_30/src/SUSYBSMAnalysis/HSCP/test/CaloHitEnergySpikes_gluino1800GeV.csv");
-  csv << "Event,Rhad1_px [GeV],Rhad1_py [GeV],Rhad2_px [GeV],Rhad2_py [GeV],ECal Type,Calohit X [cm],Calohit Y [cm],Calohit Z [cm],Calohit R [cm],Calohit Energy [GeV]\n";
+  csv << "Event,Rhad1_px [GeV],Rhad1_py [GeV],Rhad2_px [GeV],Rhad2_py [GeV],Particle Type,Detector Type,Calohit X [cm],Calohit Y [cm],Calohit Z [cm],Calohit R [cm],Calohit Energy [GeV]\n";
 
   // Declare ROOT histograms
   ECalHits_energy = new TH1F("ECalHits_energy","ECalHits_energy",100,0.,8000.);
@@ -1020,6 +1050,41 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
         return;
    }
 
+   /////////////////////////////////
+   // get muon information
+   ////////////////////////////////
+   // extract DT container
+   edm::Handle<edm::PSimHitContainer> MuonDTContainer;
+   iEvent.getByToken(edmPSimHitContainer_muonDT_Token_, MuonDTContainer);
+   if (!MuonDTContainer.isValid()) {
+     edm::LogError("TrackerHitAnalyzer::analyze") << "Unable to find MuonDT simhits in event!";
+     return;
+   }
+
+   // extract CSC container
+   edm::Handle<edm::PSimHitContainer> MuonCSCContainer;
+   iEvent.getByToken(edmPSimHitContainer_muonCSC_Token_, MuonCSCContainer);
+   if (!MuonCSCContainer.isValid()) {
+     edm::LogError("TrackerHitAnalyzer::analyze") << "Unable to find MuonCSC simhits in event!";
+     return;
+   }
+
+    // extract RPC container
+    edm::Handle<edm::PSimHitContainer> MuonRPCContainer;
+    iEvent.getByToken(edmPSimHitContainer_muonRPC_Token_, MuonRPCContainer);
+    if (!MuonRPCContainer.isValid()) {
+        edm::LogError("TrackerHitAnalyzer::analyze") << "Unable to find MuonRPC simhits in event!";
+        return;
+    }
+
+    // extract GEM container
+    edm::Handle<edm::PSimHitContainer> MuonGEMContainer;
+    iEvent.getByToken(edmPSimHitContainer_muonGEM_Token_, MuonGEMContainer);
+    if (!MuonGEMContainer.isValid()) {
+        edm::LogError("TrackerHitAnalyzer::analyze") << "Unable to find MuonGEM simhits in event!";
+        return;
+    }
+
     // Get G4SimTracks
     edm::Handle<edm::SimTrackContainer> G4TrkContainer;
     iEvent.getByToken(edmSimTrackContainerToken_, G4TrkContainer);
@@ -1036,12 +1101,15 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     //  return;
     //}
 
-   // Import tracker and calorimiter geometry
+   // Import tracker, calorimiter, and muon geometry
    edm::ESHandle<TrackerGeometry> tkGeometry;
    iSetup.get<TrackerDigiGeometryRecord>().get(tkGeometry);
 
    edm::ESHandle<CaloGeometry> caloGeometry;
    iSetup.get<CaloGeometryRecord>().get(caloGeometry); 
+
+   edm::ESHandle<MuonGeometry> muonGeometry;
+   iSetup.get<MuonGeometryRecord>().get(muonGeometry);
 
    // Find R-hadrons
    const reco::GenParticle *genrhad1=0;
@@ -1164,7 +1232,99 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     }
   }
 
-  // Grab calorimiter hits in EB
+  //////////////////////////////////
+  // Grab sim hits in the tracker //
+  //////////////////////////////////
+
+  edm::PSimHitContainer::const_iterator simHit;
+  for (simHit = SiTIBLowContainer->begin(); simHit != SiTIBLowContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)tkGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "TrackerTIBLow" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
+
+  for (simHit = SiTIBHighContainer->begin(); simHit != SiTIBHighContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)tkGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "TrackerTIBHigh" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
+
+  for (simHit = SiTOBLowContainer->begin(); simHit != SiTOBLowContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)tkGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "TrackerTOBLow" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
+
+  for (simHit = SiTOBHighContainer->begin(); simHit != SiTOBHighContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)tkGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "TrackerTOBHigh" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
+
+  for (simHit = SiTIDLowContainer->begin(); simHit != SiTIDLowContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)tkGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "TrackerTIDLow" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
+
+  for (simHit = SiTIDHighContainer->begin(); simHit != SiTIDHighContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)tkGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "TrackerTIDHigh" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
+
+  for (simHit = SiTECLowContainer->begin(); simHit != SiTECLowContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)tkGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "TrackerTECLow" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
+
+  for (simHit = SiTECHighContainer->begin(); simHit != SiTECHighContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)tkGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "TrackerTECHigh" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
+
+  for (simHit = PxlBrlLowContainer->begin(); simHit != PxlBrlLowContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)tkGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "TrackerPxlBrlLow" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
+
+  for (simHit = PxlBrlHighContainer->begin(); simHit != PxlBrlHighContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)tkGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "TrackerPxlBrlHigh" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
+
+  for (simHit = PxlFwdLowContainer->begin(); simHit != PxlFwdLowContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)tkGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "TrackerPxlFwdLow" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
+
+  for (simHit = PxlFwdHighContainer->begin(); simHit != PxlFwdHighContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)tkGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "TrackerPxlFwdHigh" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
+
+  ///////////////////////////////////////
+  // Grab sim hits in the calorimiters //
+  ///////////////////////////////////////
+
   edm::PCaloHitContainer::const_iterator caloHit;
   for (caloHit = EcalEBContainer->begin(); caloHit != EcalEBContainer->end(); ++caloHit) {
     DetId detid = DetId(caloHit->id());
@@ -1192,8 +1352,9 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     //int simVertexId = simTrack->vertIndex();
     //CoreSimVertex simVertex = SimVertex(simVertexId);
     //GlobalPoint gpos = simVertex.position();
-    //END OF WARNING//
     */
+    //END OF WARNING//
+    
 
     // Fill calohit energy histogram
     ECalHits_energy->Fill(caloHit->energy());
@@ -1219,7 +1380,7 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     EBHits_RZ->Fill(gpos.z(),sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()));
 
     // Fill csv for energy spike R-hadron analysis
-    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << "EB" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << caloHit->energy() << "\n";
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << 0 << "," << "EB" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << caloHit->energy() << "\n";
   }
   
   // Grab calorimiter hits in ES
@@ -1246,7 +1407,7 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     }
 
     // Fill csv for energy spike R-hadron analysis
-    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << "ES" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << caloHit->energy() << "\n";
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << 0 << "," << "ES" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << caloHit->energy() << "\n";
   }
   
   // Grab calorimiter hits in EE
@@ -1273,26 +1434,63 @@ void SimCaloHitAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup
     }
 
     // Fill csv for energy spike R-hadron analysis
-    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << "EE" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << caloHit->energy() << "\n";
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << 0 << "," << "EE" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << caloHit->energy() << "\n";
   }
 
-  /*
+  
   // Grab calorimiter hits in HCal
-  for (caloHit = HcalContainer->begin(); caloHit != HcalContainer->end(); ++caloHit) {
-    DetId detid = DetId(caloHit->id());
-    std::cout << "Hcal detID = " << caloHit->id() << std::en`dl;
-    std::cout << "Hcal subdetID = " << detid.subdetId() << std::endl;
-    GlobalPoint gpos = caloGeometry->getPosition(detid);
-    std::cout << "Hcal global x position = " << gpos.x() << std::endl;
-
-    // Fill calohit location histograms
-    HCalHits_eta->Fill(gpos.eta());
-    HCalHits_phi->Fill(gpos.phi());
-    HCalHits_x->Fill(gpos.x());
-    HCalHits_y->Fill(gpos.y());
-    HCalHits_z->Fill(gpos.z());
+  test::test(const edm::ParameterSet& iConfig)  
+  : tok_HRNDC_(esConsumes<HcalDDDRecConstants, HcalRecNumberingRecord, edm::Transition::BeginRun>()),
+    tok_geom_(esConsumes<CaloGeometry, CaloGeometryRecord, edm::Transition::BeginRun>()), 
+    tok_caloTopology_(esConsumes<CaloTopology, CaloTopologyRecord, edm::Transition::BeginRun>()), 
+    tok_hcalTopology_(esConsumes<HcalTopology, HcalRecNumberingRecord, edm::Transition::BeginRun>()), 
+    tok_resp_(esConsumes<HcalRespCorrs, HcalRespCorrsRcd, edm::Transition::BeginRun>()) {
+  
+    Handle<PCaloHitContainer> caloHits;
+    iEvent.getByToken(tokSimHits_, caloHits);
+    if(caloHits.isValid()) {
+      PCaloHitContainer::const_iterator iHit;
+      for (iHit = caloHits->begin(); iHit != caloHits->end(); iHit++) {
+        
+        HcalDetId hid;
+        hid = HcalHitRelabeller::relabel(iHit->id(), hcons_);
+        GlobalPoint gpos = caloGeometry->getPosition(detid);
+        csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << 0 << "," << subdet(hid) << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << iHit->energy() << "\n";
+      }
+    }
   }
-  */
+
+  //////////////////////////////////////
+  // Grab sim hits in the muon system //
+  //////////////////////////////////////
+
+  for (simHit = MuonDTContainer->begin(); simHit != MuonDTContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)muonGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "MuonDT" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
+
+  for (simHit = MuonCSCContainer->begin(); simHit != MuonCSCContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)muonGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "MuonCSC" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
+
+  for (simHit = MuonRPCContainer->begin(); simHit != MuonRPCContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)muonGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "MuonRPC" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
+
+  for (simHit = MuonGEMContainer->begin(); simHit != MuonGEMContainer->end(); ++simHit) {
+    DetId detid = DetId(simHit->detUnitId());
+    const GeomDetUnit *det = (const GeomDetUnit *)muonGeometry->idToDetUnit(detid);
+    GlobalPoint gpos = det->toGlobal(simHit->localPosition());
+    csv << evtcount << "," << genrhad1->p4().px() << "," << genrhad1->p4().py() << "," << genrhad2->p4().px() << "," << genrhad2->p4().py() << "," << simHit->particleType() << "," << "MuonGEM" << "," << gpos.x() << "," << gpos.y() << "," << gpos.z() << "," << sqrt(gpos.x()*gpos.x()+gpos.y()*gpos.y()) << "," << simHit->energyLoss() << "\n";
+  }
 }
 
 //define this as a plug-in
