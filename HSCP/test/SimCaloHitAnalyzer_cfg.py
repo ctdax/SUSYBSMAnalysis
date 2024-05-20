@@ -31,6 +31,7 @@ process.demo = cms.EDAnalyzer("SimCaloHitAnalyzer",
     gen_info = cms.InputTag("genParticles","","SIM"),
 
     G4TrkSrc = cms.InputTag("g4SimHits"),
+    G4VtxSrc = cms.InputTag("g4SimHits"),
 
     # Tracker
     TrackerHitsPixelBarrelLowTof = cms.InputTag("g4SimHits","TrackerHitsPixelBarrelLowTof"),
@@ -55,6 +56,8 @@ process.demo = cms.EDAnalyzer("SimCaloHitAnalyzer",
     # Muon
     MuonCSCHits = cms.InputTag("g4SimHits","MuonCSCHits"),
     MuonDTHits = cms.InputTag("g4SimHits","MuonDTHits"),
+    MuonRPCHits = cms.InputTag("g4SimHits","MuonRPCHits"),
+    MuonGEMHits = cms.InputTag("g4SimHits","MuonGEMHits"),
 
     bits = cms.InputTag("TriggerResults","","HLT"),
 #    objects = cms.InputTag("selectedPatTrigger"),
